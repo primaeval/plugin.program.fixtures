@@ -101,9 +101,8 @@ def choose_stream(station):
             plugin.play_video(item)
     else:
         addon_id = addon_labels[addon]
-        log(addon_id)
         channel_labels = sorted(addons[addon_id])
-        channel = d.select("Addon: "+station,channel_labels)
+        channel = d.select("["+addon_id+"] "+station,channel_labels)
         if channel == -1:
             return
         streams[station] = addons[addon_id][channel_labels[channel]]
