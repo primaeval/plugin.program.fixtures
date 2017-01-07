@@ -9,8 +9,6 @@ import hashlib
 import zipfile
 import time
 import os
-#import xml.etree.ElementTree as ET
-#from HTMLParser import HTMLParser
 from bs4 import BeautifulSoup
 from urlparse import urlparse
 from PIL import Image
@@ -24,6 +22,10 @@ plugin = Plugin()
 def log(x):
     xbmc.log(repr(x))
 
+
+def get_icon_path(icon_name):
+    addon_path = xbmcaddon.Addon().getAddonInfo("path")
+    return os.path.join(addon_path, 'resources', 'img', icon_name+".png")
 
 def unescape( str ):
     str = str.replace("&lt;","<")
@@ -143,12 +145,13 @@ def listing(url):
     for match_div in matches[1:]:
         soup = BeautifulSoup('<div class="match'+match_div)
         sport_div = soup.find(class_=re.compile("sport"))
+        sport = "unknown"
         if sport_div:
             sport = sport_div.img["alt"]
             icon = sport_div.img["src"]
             if icon:
                 icon = domain+icon
-                images[icon] = "special://profile/addon_data/icons/%s" % icon.rsplit('/',1)[-1]
+                images[icon] = "special://profile/addon_data/plugin.program.fixtures/icons/%s" % icon.rsplit('/',1)[-1]
                 local_icon = images[icon]
             else:
                 icon = ''
@@ -168,12 +171,23 @@ def listing(url):
         if stations:
             stations = ', '.join(stations.stripped_strings)
         if match_time:
+            if plugin.get_setting('channels') == 'true':
+                if '/anySport' in url:
+                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (match_time, fixture, competition, sport, stations)
+                else:
+                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (match_time, fixture, competition, stations )
+            else:
+                if '/anySport' in url:
+                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (match_time, fixture, competition, sport)
+                else:
+                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (match_time, fixture, competition)
             items.append({
-                'label' : "%s [COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (match_time, sport, fixture, competition, stations),
+                'label' : label,
                 'thumbnail': local_icon,
                 'path': plugin.url_for('stations_list', stations=stations.encode("utf8"))
             })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
+    log(images)
     for image in images:
         local_image = images[image]
         if not xbmcvfs.exists(local_image):
@@ -210,11 +224,21 @@ def sports_index(day):
     for sport in sports:
         id = sport.replace(' ','')
         name = sport.title()
+        '''
+        image = 'http://www.getyourfixtures.com/gfx/disciplines/%s.png' % id
+        local_image = 'special://profile/addon_data/plugin.program.fixtures/icons/%s.png' % id
+        xbmcvfs.copy(image,local_image)
+        png = Image.open(xbmc.translatePath(local_image))
+        png.load() # required for png.split()
+        background = Image.new("RGB", png.size, (255, 255, 255))
+        background.paste(png, mask=png.split()[3]) # 3 is the alpha channel
+        background.save(xbmc.translatePath(local_image))
+        '''
         items.append(
         {
             'label': name,
             'path': plugin.url_for('listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
+            'thumbnail': get_icon_path(id),
         })
     return items
 
