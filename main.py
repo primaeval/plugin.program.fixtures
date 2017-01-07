@@ -98,12 +98,14 @@ def choose_stream(station):
                  }
             plugin.play_video(item)
     else:
-        addon = addon - 1
-        channel_labels = sorted(addons[addon_labels[addon]])
+        #addon = addon - 1
+        addon_id = addon_labels[addon]
+        log(addon_id)
+        channel_labels = sorted(addons[addon_id])
         channel = d.select("Addon: "+station,channel_labels)
         if channel == -1:
             return
-        streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
+        streams[station] = addons[addon_id][channel_labels[channel]]
         item = {'label': channel_labels[channel],
              'path': streams[station],
              'is_playable': True,
