@@ -98,7 +98,6 @@ def choose_stream(station):
                  }
             plugin.play_video(item)
     else:
-        #addon = addon - 1
         addon_id = addon_labels[addon]
         log(addon_id)
         channel_labels = sorted(addons[addon_id])
@@ -117,8 +116,9 @@ def choose_stream(station):
 @plugin.route('/stations_list/<stations>')
 def stations_list(stations):
     items = []
-    context_items = []
+
     for station in stations.split(','):
+        context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
         items.append(
         {
