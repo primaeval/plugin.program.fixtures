@@ -66,20 +66,49 @@ def choose_stream(station):
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
-    addon_labels = sorted(addons)
+    addon_labels = ["Guess"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
-    channel_labels = sorted(addons[addon_labels[addon]])
-    channel = d.select("Addon: "+station,channel_labels)
-    if channel == -1:
-        return
-    streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
-    item = {'label': channel_labels[channel],
-         'path': streams[station],
-         'is_playable': True,
-         }
-    plugin.play_video(item)
+    s = station.lower().replace(' ','')
+    sword = s.replace('1','one')
+    sword = sword.replace('2','two')
+    sword = sword.replace('4','four')
+    found_streams = {}
+    if addon == 0:
+        for a in sorted(addons):
+            for c in sorted(addons[a]):
+                n = c.lower().replace(' ','')
+                if n:
+                    label = "[%s] %s" % (a,c)
+                    if (s.startswith(n) or n.startswith(s)):
+                        found_streams[label] = addons[a][c]
+                    elif (sword.startswith(n) or n.startswith(sword)):
+                        found_streams[label] = addons[a][c]
+
+        stream_list = sorted(found_streams)
+        if stream_list:
+            choice = d.select(station,stream_list)
+            if choice == -1:
+                return
+            streams[station] = found_streams[stream_list[choice]]
+            item = {'label': stream_list[choice],
+                 'path': streams[station],
+                 'is_playable': True,
+                 }
+            plugin.play_video(item)
+    else:
+        addon = addon - 1
+        channel_labels = sorted(addons[addon_labels[addon]])
+        channel = d.select("Addon: "+station,channel_labels)
+        if channel == -1:
+            return
+        streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
+        item = {'label': channel_labels[channel],
+             'path': streams[station],
+             'is_playable': True,
+             }
+        plugin.play_video(item)
 
 
 
