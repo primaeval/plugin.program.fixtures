@@ -45,7 +45,7 @@ def stations_list(stations):
         {
             'label': station.strip(),
             'path': plugin.url_for('stations_list', stations=stations),
-            'thumbnail': 'special://home/addons/plugin.program.downloader/icon.png',
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
         })
 
     return items
@@ -134,7 +134,7 @@ def sports_index(day):
         {
             'label': name,
             'path': plugin.url_for('listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
-            'thumbnail': 'special://home/addons/plugin.program.downloader/icon.png',
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
         })
     return items  
 
@@ -153,7 +153,7 @@ def index():
         {
             'label': day,
             'path': plugin.url_for('sports_index', day=day.lower()),
-            'thumbnail': 'special://home/addons/plugin.program.downloader/icon.png',
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
         })
 
     return items
