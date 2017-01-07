@@ -36,20 +36,70 @@ def unescape( str ):
     str = str.replace("script async","script")
     return str
 
+@plugin.route('/play_channel/<station>')
+def play_channel(station):
+    streams = plugin.get_storage('streams')
+    if station in streams:
+        item = {'label': station,
+             'path': streams[station],
+             'is_playable': True,
+             }
+        plugin.play_video(item)
+    else:
+        choose_stream(station)
+
+@plugin.route('/choose_stream/<station>')
+def choose_stream(station):
+    streams = plugin.get_storage('streams')
+    data = xbmcvfs.File(plugin.get_setting('addons.ini'),'rb').read()
+    if not data:
+        return
+    lines = data.splitlines()
+    addons = {}
+    for line in lines:
+        if line.startswith('['):
+            addon = line.strip('[] ')
+            if addon not in addons:
+                addons[addon] = {}
+        elif not line.startswith('#'):
+            channel_url = line.split('=',1)
+            if addon and len(channel_url) == 2:
+                addons[addon][channel_url[0]] = channel_url[1]
+    d = xbmcgui.Dialog()
+    addon_labels = sorted(addons)
+    addon = d.select("Addon",addon_labels)
+    if addon == -1:
+        return
+    channel_labels = sorted(addons[addon_labels[addon]])
+    channel = d.select("Addon",channel_labels)
+    if channel == -1:
+        return
+    streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
+    log(streams[station])
+    item = {'label': channel_labels[channel],
+         'path': streams[station],
+         'is_playable': True,
+         }
+    plugin.play_video(item)
+
+
+
 @plugin.route('/stations_list/<stations>')
-def stations_list(stations):   
+def stations_list(stations):
     items = []
-    
+    context_items = []
     for station in stations.split(','):
+        context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
         items.append(
         {
             'label': station.strip(),
-            'path': plugin.url_for('stations_list', stations=stations),
+            'path': plugin.url_for('play_channel', station=station),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
+            'context_menu': context_items,
         })
 
     return items
-    
+
 @plugin.route('/listing/<url>')
 def listing(url):
     parsed_uri = urlparse(url)
@@ -106,11 +156,11 @@ def listing(url):
 
 
     return items
-  
+
 @plugin.route('/sports_index/<day>')
 def sports_index(day):
     items = []
-    
+
     sports = [
     "any Sport",
     "american football",
@@ -136,7 +186,7 @@ def sports_index(day):
             'path': plugin.url_for('listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
         })
-    return items  
+    return items
 
 
 @plugin.route('/')
