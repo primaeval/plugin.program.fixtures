@@ -67,11 +67,11 @@ def choose_stream(station):
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
     addon_labels = sorted(addons)
-    addon = d.select("Addon",addon_labels)
+    addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
     channel_labels = sorted(addons[addon_labels[addon]])
-    channel = d.select("Addon",channel_labels)
+    channel = d.select("Addon: "+station,channel_labels)
     if channel == -1:
         return
     streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
