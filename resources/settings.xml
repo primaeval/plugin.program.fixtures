@@ -1,0 +1,5 @@
+<settings>
+<category label="General">
+<setting id="country" label="Country Code" type="select" default="all" values="all|ai|al|ao|ar|au|az|ba|be|bg|br|ca|ch|cn|cy|cz|de|dk|en|es|fi|fr|gr|hk|hr|hu|id|ie|il|in|ir|is|it|jp|kr|lv|mt|mx|my|nl|no|nz|pl|pt|qa|ro|rs|ru|s2|se|sg|si|sk|th|tr|ua|uk|us|vn|wa|za" />
+</category>
+</settings>
