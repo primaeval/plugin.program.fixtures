@@ -75,7 +75,6 @@ def choose_stream(station):
     if channel == -1:
         return
     streams[station] = addons[addon_labels[addon]][channel_labels[channel]]
-    log(streams[station])
     item = {'label': channel_labels[channel],
          'path': streams[station],
          'is_playable': True,
