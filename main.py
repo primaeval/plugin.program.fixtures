@@ -58,6 +58,7 @@ def choose_stream(station):
         return
     lines = data.splitlines()
     addons = {}
+    addon = ""
     for line in lines:
         if line.startswith('['):
             addon = line.strip('[] ')
