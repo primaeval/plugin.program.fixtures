@@ -101,7 +101,10 @@ def choose_stream(station):
             plugin.play_video(item)
             return
     elif addon == 1:
-        response = RPC.addons.get_addons(type="xbmc.addon.video",properties=["name", "thumbnail"])
+        try:
+            response = RPC.addons.get_addons(type="xbmc.addon.video",properties=["name", "thumbnail"])
+        except:
+            return
         if "addons" not in response:
             return
         found_addons = response["addons"]
@@ -114,11 +117,14 @@ def choose_stream(station):
         id = addon_labels[selected_addon]
         path = "plugin://%s" % id
         while True:
-            response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
+            try:
+                response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
+            except:
+                return
             files = response["files"]
             dirs = sorted([[f["label"],f["file"],] for f in files if f["filetype"] == "directory"])
             links = sorted([[f["label"],f["file"]] for f in files if f["filetype"] == "file"])
-            labels = ["[B]%s[/B]" % a[0] for a in dirs] + ["%s" % a[0] for a in links]
+            labels = ["[COLOR blue]%s[/COLOR]" % a[0] for a in dirs] + ["%s" % a[0] for a in links]
             selected = d.select("Addon: "+station,labels)
             if selected == -1:
                 return
@@ -154,14 +160,19 @@ def choose_stream(station):
 
 @plugin.route('/stations_list/<stations>')
 def stations_list(stations):
+    streams = plugin.get_storage('streams')
     items = []
 
     for station in stations.split(','):
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
+        if station in streams:
+            label = "[COLOR yellow]%s[/COLOR]" % station.strip()
+        else:
+            label = station.strip()
         items.append(
         {
-            'label': station.strip(),
+            'label': label,
             'path': plugin.url_for('play_channel', station=station),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
             'context_menu': context_items,
