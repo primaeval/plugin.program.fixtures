@@ -235,7 +235,6 @@ def listing(url):
                 'path': plugin.url_for('stations_list', stations=stations.encode("utf8"))
             })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
-    log(images)
     for image in images:
         local_image = images[image]
         if not xbmcvfs.exists(local_image):
