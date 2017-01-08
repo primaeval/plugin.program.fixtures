@@ -50,6 +50,14 @@ def play_channel(station):
     else:
         choose_stream(station)
 
+@plugin.route('/alternative_play/<station>')
+def alternative_play(station):
+    streams = plugin.get_storage('streams')
+    if station in streams and streams[station]:
+        xbmc.executebuiltin('XBMC.RunPlugin(%s)' % streams[station])
+    else:
+        choose_stream(station)
+
 @plugin.route('/choose_stream/<station>')
 def choose_stream(station):
     streams = plugin.get_storage('streams')
@@ -67,7 +75,7 @@ def choose_stream(station):
         elif not line.startswith('#'):
             channel_url = line.split('=',1)
             if addon and len(channel_url) == 2:
-                addons[addon][channel_url[0]] = channel_url[1]
+                addons[addon][channel_url[0]] = channel_url[1].lstrip('@')
     d = xbmcgui.Dialog()
     addon_labels = ["Guess", "Browse", "Playlist", "PVR", "Clear"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
@@ -210,7 +218,6 @@ def choose_stream(station):
              'is_playable': True,
              }
         plugin.play_video(item)
-        return
 
 
 
@@ -223,6 +230,7 @@ def stations_list(stations):
         station = station.strip()
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
+        context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station))))
         if station in streams and streams[station]:
             label = "[COLOR yellow]%s[/COLOR]" % station.strip()
         else:
