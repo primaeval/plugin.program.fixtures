@@ -68,7 +68,7 @@ def choose_stream(station):
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
-    addon_labels = ["Guess", "Browse"]+sorted(addons)
+    addon_labels = ["Guess", "Browse", "Playlist"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
@@ -141,7 +141,29 @@ def choose_stream(station):
                      }
                 plugin.play_video(item)
                 return
-
+    elif addon == 2:
+        playlist = d.browse(1, 'Playlist: %s' % station, 'files', '', False, False)
+        if not playlist:
+            return
+        data = xbmcvfs.File(playlist,'rb').read()
+        matches = re.findall(r'#EXTINF:.*?,(.*?)\n(.*?)\n',data,flags=(re.DOTALL | re.MULTILINE))
+        names = []
+        urls =[]
+        for name,url in matches:
+            names.append(name.strip())
+            urls.append(url.strip())
+        if names:
+            index = d.select("Choose stream: %s" % station,names)
+            if index != -1:
+                stream = urls[index]
+                stream_name = names[index]
+                streams[station] = stream
+                item = {'label': stream_name,
+                     'path': streams[station],
+                     'is_playable': True,
+                     }
+                plugin.play_video(item)
+                return
     else:
         addon_id = addon_labels[addon]
         channel_labels = sorted(addons[addon_id])
