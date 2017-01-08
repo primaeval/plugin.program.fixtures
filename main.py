@@ -15,7 +15,7 @@ from PIL import Image
 import PIL.ImageOps
 import datetime
 from datetime import timedelta
-
+from rpc import RPC
 
 plugin = Plugin()
 
@@ -68,7 +68,7 @@ def choose_stream(station):
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
-    addon_labels = ["Guess"]+sorted(addons)
+    addon_labels = ["Guess", "Browse"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
@@ -99,6 +99,43 @@ def choose_stream(station):
                  'is_playable': True,
                  }
             plugin.play_video(item)
+            return
+    elif addon == 1:
+        response = RPC.addons.get_addons(type="xbmc.addon.video",properties=["name", "thumbnail"])
+        if "addons" not in response:
+            return
+        found_addons = response["addons"]
+        if not found_addons:
+            return
+        addon_labels = sorted([a['addonid'] for a in found_addons])
+        selected_addon = d.select("Addon: "+station,addon_labels)
+        if selected_addon == -1:
+            return
+        id = addon_labels[selected_addon]
+        path = "plugin://%s" % id
+        while True:
+            response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
+            files = response["files"]
+            dirs = sorted([[f["label"],f["file"],] for f in files if f["filetype"] == "directory"])
+            links = sorted([[f["label"],f["file"]] for f in files if f["filetype"] == "file"])
+            labels = ["[B]%s[/B]" % a[0] for a in dirs] + ["%s" % a[0] for a in links]
+            selected = d.select("Addon: "+station,labels)
+            if selected == -1:
+                return
+            if selected < len(dirs):
+                dir = dirs[selected]
+                path = dir[1]
+            else:
+                link = links[selected]
+                streams[station] = link[1]
+                name = link[0]
+                item = {'label': name,
+                     'path': streams[station],
+                     'is_playable': True,
+                     }
+                plugin.play_video(item)
+                return
+
     else:
         addon_id = addon_labels[addon]
         channel_labels = sorted(addons[addon_id])
@@ -111,6 +148,7 @@ def choose_stream(station):
              'is_playable': True,
              }
         plugin.play_video(item)
+        return
 
 
 
