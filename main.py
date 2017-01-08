@@ -68,7 +68,7 @@ def choose_stream(station):
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
-    addon_labels = ["Guess", "Browse", "Playlist"]+sorted(addons)
+    addon_labels = ["Guess", "Browse", "Playlist", "Clear"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
@@ -164,6 +164,10 @@ def choose_stream(station):
                      }
                 plugin.play_video(item)
                 return
+    elif addon == 3:
+        streams[station] = None
+        xbmc.executebuiltin("Container.Refresh")
+        return
     else:
         addon_id = addon_labels[addon]
         channel_labels = sorted(addons[addon_id])
