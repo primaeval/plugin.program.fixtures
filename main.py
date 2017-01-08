@@ -68,7 +68,7 @@ def choose_stream(station):
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1]
     d = xbmcgui.Dialog()
-    addon_labels = ["Guess", "Browse", "Playlist", "Clear"]+sorted(addons)
+    addon_labels = ["Guess", "Browse", "Playlist", "PVR", "Clear"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
@@ -165,6 +165,35 @@ def choose_stream(station):
                 plugin.play_video(item)
                 return
     elif addon == 3:
+        index = 0
+        urls = []
+        channels = {}
+        for group in ["radio","tv"]:
+            urls = urls + xbmcvfs.listdir("pvr://channels/%s/All channels/" % group)[1]
+        for group in ["radio","tv"]:
+            groupid = "all%s" % group
+            json_query = RPC.PVR.get_channels(channelgroupid=groupid, properties=[ "thumbnail", "channeltype", "hidden", "locked", "channel", "lastplayed", "broadcastnow" ] )
+            if "channels" in json_query:
+                for channel in json_query["channels"]:
+                    channelname = channel["label"]
+                    streamUrl = urls[index]
+                    index = index + 1
+                    url = "pvr://channels/%s/All channels/%s" % (group,streamUrl)
+                    channels[channelname] = url
+        labels = sorted(channels)
+        selected_channel = d.select('PVR: %s' % station,labels)
+        if selected_channel == -1:
+            return
+        stream_name = labels[selected_channel]
+        stream = channels[stream_name]
+        streams[station] = stream
+        item = {'label': stream_name,
+             'path': streams[station],
+             'is_playable': True,
+             }
+        plugin.play_video(item)
+        return
+    elif addon == 4:
         streams[station] = None
         xbmc.executebuiltin("Container.Refresh")
         return
