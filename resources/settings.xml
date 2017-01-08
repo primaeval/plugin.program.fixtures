@@ -4,4 +4,8 @@
 <setting id="addons.ini" label="addons.ini" type="file" mask="addons.ini" />
 <setting id="channels" label="Show Channels" type="bool" default="false" />
 </category>
+<category label="Backup">
+<setting label="Export Channel Mappings" type="action" action="RunPlugin(plugin://plugin.program.fixtures/export_mapping)" />
+<setting label="Import Channel Mappings" type="action" action="RunPlugin(plugin://plugin.program.fixtures/import_mapping)" />
+</category>
 </settings>

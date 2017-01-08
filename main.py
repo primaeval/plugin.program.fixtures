@@ -18,6 +18,7 @@ from datetime import timedelta
 from rpc import RPC
 
 plugin = Plugin()
+big_list_view = False
 
 def log(x):
     xbmc.log(repr(x))
@@ -186,6 +187,7 @@ def stations_list(stations):
     items = []
 
     for station in stations.split(','):
+        station = station.strip()
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
         if station in streams:
@@ -204,6 +206,8 @@ def stations_list(stations):
 
 @plugin.route('/listing/<url>')
 def listing(url):
+    global big_list_view
+    big_list_view = True
     parsed_uri = urlparse(url)
     domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
     data = requests.get(url).content
@@ -272,6 +276,8 @@ def listing(url):
 
 @plugin.route('/sports_index/<day>')
 def sports_index(day):
+    global big_list_view
+    big_list_view = True
     items = []
 
     sports = [
@@ -311,6 +317,27 @@ def sports_index(day):
         })
     return items
 
+@plugin.route('/export_mapping')
+def export_mapping():
+    streams = plugin.get_storage('streams')
+    f = xbmcvfs.File('special://profile/addon_data/plugin.program.fixtures/channels.ini','wb')
+    for channel in sorted(streams):
+        stream = streams[channel]
+        s = "%s=%s\n" % (channel,stream)
+        f.write(s.encode("utf8"))
+    f.close()
+
+@plugin.route('/import_mapping')
+def import_mapping():
+    streams = plugin.get_storage('streams')
+    f = xbmcvfs.File('special://profile/addon_data/plugin.program.fixtures/channels.ini','rb')
+    lines = f.read().splitlines()
+    for line in lines:
+        channel_stream = line.split('=',1)
+        if len(channel_stream) == 2:
+            channel = channel_stream[0]
+            stream = channel_stream[1]
+            streams[channel] = stream
 
 @plugin.route('/')
 def index():
@@ -333,4 +360,5 @@ def index():
 
 if __name__ == '__main__':
     plugin.run()
-    plugin.set_view_mode(51)
+    if big_list_view:
+        plugin.set_view_mode(51)
