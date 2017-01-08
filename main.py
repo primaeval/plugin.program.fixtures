@@ -41,7 +41,7 @@ def unescape( str ):
 @plugin.route('/play_channel/<station>')
 def play_channel(station):
     streams = plugin.get_storage('streams')
-    if station in streams:
+    if station in streams and streams[station]:
         item = {'label': station,
              'path': streams[station],
              'is_playable': True,
@@ -189,7 +189,7 @@ def stations_list(stations):
         station = station.strip()
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
-        if station in streams and station != None:
+        if station in streams and streams[station]:
             label = "[COLOR yellow]%s[/COLOR]" % station.strip()
         else:
             label = station.strip()
@@ -243,24 +243,33 @@ def listing(url):
         if fixture:
             fixture = ' '.join(fixture.stripped_strings)
         stations = soup.find(class_=re.compile("stations"))
+        playable = False
         if stations:
             stations = stations.stripped_strings
             stations = list(stations)
             for s in stations:
                 if s not in streams:
                     streams[s] = ""
+                elif streams[s]:
+                    playable = True
             stations = ', '.join(stations)
+
         if match_time:
+            if playable:
+                colour = "blue"
+            else:
+                colour = "dimgray"
             if plugin.get_setting('channels') == 'true':
                 if '/anySport' in url:
-                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (match_time, fixture, competition, sport, stations)
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition, sport, stations)
                 else:
-                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (match_time, fixture, competition, stations )
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (colour, match_time, fixture, competition, stations )
             else:
                 if '/anySport' in url:
-                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (match_time, fixture, competition, sport)
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (colour, match_time, fixture, competition, sport)
                 else:
-                    label =  "[COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (match_time, fixture, competition)
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition)
+
             items.append({
                 'label' : label,
                 'thumbnail': local_icon,
