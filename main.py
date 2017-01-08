@@ -189,7 +189,7 @@ def stations_list(stations):
         station = station.strip()
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
-        if station in streams:
+        if station in streams and station != None:
             label = "[COLOR yellow]%s[/COLOR]" % station.strip()
         else:
             label = station.strip()
@@ -207,6 +207,7 @@ def stations_list(stations):
 def listing(url):
     global big_list_view
     big_list_view = True
+    streams = plugin.get_storage('streams')
     parsed_uri = urlparse(url)
     domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
     data = requests.get(url).content
@@ -243,7 +244,12 @@ def listing(url):
             fixture = ' '.join(fixture.stripped_strings)
         stations = soup.find(class_=re.compile("stations"))
         if stations:
-            stations = ', '.join(stations.stripped_strings)
+            stations = stations.stripped_strings
+            stations = list(stations)
+            for s in stations:
+                if s not in streams:
+                    streams[s] = ""
+            stations = ', '.join(stations)
         if match_time:
             if plugin.get_setting('channels') == 'true':
                 if '/anySport' in url:
