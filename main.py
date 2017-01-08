@@ -36,7 +36,6 @@ def unescape( str ):
     str = str.replace("&nbsp;"," ")
     str = str.replace("&dash;","-")
     str = str.replace("&ndash;","-")
-    str = str.replace("script async","script")
     return str
 
 @plugin.route('/play_channel/<station>')
@@ -232,6 +231,7 @@ def listing(url):
         match_time = soup.find(class_=re.compile("time"))
         if match_time:
             match_time = unescape(' '.join(match_time.stripped_strings))
+            match_time = match_time.replace("script async","script")
         else:
             pass
             #log(soup)
