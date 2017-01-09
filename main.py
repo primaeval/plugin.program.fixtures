@@ -23,6 +23,10 @@ big_list_view = False
 def log(x):
     xbmc.log(repr(x))
 
+def remove_formatting(label):
+    label = re.sub(r"\[/?[BI]\]",'',label)
+    label = re.sub(r"\[/?COLOR.*?\]",'',label)
+    return label
 
 def get_icon_path(icon_name):
     addon_path = xbmcaddon.Addon().getAddonInfo("path")
@@ -128,7 +132,7 @@ def choose_stream(station):
         found_addons = response["addons"]
         if not found_addons:
             return
-        name_ids = sorted([(a['name'],a['addonid']) for a in found_addons])
+        name_ids = sorted([(remove_formatting(a['name']),a['addonid']) for a in found_addons])
         names = [x[0] for x in name_ids]
         selected_addon = d.select("Addon: "+station,names)
         if selected_addon == -1:
@@ -138,11 +142,11 @@ def choose_stream(station):
         while True:
             try:
                 response = RPC.files.get_directory(media="files", directory=path, properties=["thumbnail"])
-            except:
+            except Exception as detail:
                 return
             files = response["files"]
-            dirs = sorted([[f["label"],f["file"],] for f in files if f["filetype"] == "directory"])
-            links = sorted([[f["label"],f["file"]] for f in files if f["filetype"] == "file"])
+            dirs = sorted([[remove_formatting(f["label"]),f["file"],] for f in files if f["filetype"] == "directory"])
+            links = sorted([[remove_formatting(f["label"]),f["file"]] for f in files if f["filetype"] == "file"])
             labels = ["[COLOR blue]%s[/COLOR]" % a[0] for a in dirs] + ["%s" % a[0] for a in links]
             selected = d.select("Addon: "+station,labels)
             if selected == -1:
