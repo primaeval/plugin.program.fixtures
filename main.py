@@ -128,11 +128,12 @@ def choose_stream(station):
         found_addons = response["addons"]
         if not found_addons:
             return
-        addon_labels = sorted([a['addonid'] for a in found_addons])
-        selected_addon = d.select("Addon: "+station,addon_labels)
+        name_ids = sorted([(a['name'],a['addonid']) for a in found_addons])
+        names = [x[0] for x in name_ids]
+        selected_addon = d.select("Addon: "+station,names)
         if selected_addon == -1:
             return
-        id = addon_labels[selected_addon]
+        id = name_ids[selected_addon][1]
         path = "plugin://%s" % id
         while True:
             try:
