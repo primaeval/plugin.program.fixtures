@@ -291,7 +291,13 @@ def listing(url):
     streams = plugin.get_storage('streams')
     parsed_uri = urlparse(url)
     domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
-    data = requests.get(url).content
+    timezone = plugin.get_setting('timezone')
+    if timezone != "None":
+        s = requests.Session()
+        r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
+        data = s.get(url).content
+    else:
+        data = requests.get(url).content
     if not data:
         return
     items = []
