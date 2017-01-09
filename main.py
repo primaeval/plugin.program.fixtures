@@ -61,9 +61,12 @@ def alternative_play(station):
 @plugin.route('/choose_stream/<station>')
 def choose_stream(station):
     streams = plugin.get_storage('streams')
-    data = xbmcvfs.File(plugin.get_setting('addons.ini'),'rb').read()
+    d = xbmcgui.Dialog()
+    addons_ini = plugin.get_setting('addons.ini')
+    data = xbmcvfs.File(addons_ini,'rb').read()
+    no_addons_ini = False
     if not data:
-        return
+        no_addons_ini = True
     lines = data.splitlines()
     addons = {}
     addon = ""
@@ -76,8 +79,11 @@ def choose_stream(station):
             channel_url = line.split('=',1)
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1].lstrip('@')
-    d = xbmcgui.Dialog()
-    addon_labels = ["Guess", "Browse", "Playlist", "PVR", "Clear"]+sorted(addons)
+    if no_addons_ini:
+        guess = "Guess (needs addons.ini)"
+    else:
+        guess = "Guess"
+    addon_labels = [guess, "Browse", "Playlist", "PVR", "Favourites", "Clear"]+sorted(addons)
     addon = d.select("Addon: "+station,addon_labels)
     if addon == -1:
         return
@@ -87,6 +93,9 @@ def choose_stream(station):
     sword = sword.replace('4','four')
     found_streams = {}
     if addon == 0:
+        if no_addons_ini:
+            plugin.open_settings()
+            return
         for a in sorted(addons):
             for c in sorted(addons[a]):
                 n = c.lower().replace(' ','')
@@ -203,6 +212,35 @@ def choose_stream(station):
         plugin.play_video(item)
         return
     elif addon == 4:
+        data = xbmcvfs.File('special://profile/favourites.xml','rb').read()
+        matches = re.findall(r'<favourite.*?name="(.*?)".*?>(.*?)<',data,flags=(re.DOTALL | re.MULTILINE))
+        favourites = {}
+        for name,value in matches:
+            if value[0:11] == 'PlayMedia("':
+                value = value[11:-2]
+            elif value[0:10] == 'PlayMedia(':
+                value = value[10:-1]
+            elif value[0:22] == 'ActivateWindow(10025,"':
+                value = value[22:-9]
+            elif value[0:21] == 'ActivateWindow(10025,':
+                value = value[22:-8]
+            else:
+                continue
+            favourites[name] = re.sub('&quot;','',value)
+        names = sorted(favourites)
+        fav = d.select('PVR: %s' % station,names)
+        if fav == -1:
+            return
+        stream_name = names[fav]
+        stream = favourites[stream_name]
+        streams[station] = stream
+        item = {'label': stream_name,
+             'path': streams[station],
+             'is_playable': True,
+             }
+        plugin.play_video(item)
+        return
+    elif addon == 5:
         streams[station] = None
         xbmc.executebuiltin("Container.Refresh")
         return
