@@ -233,7 +233,8 @@ def choose_stream(station):
                 value = value[22:-8]
             else:
                 continue
-            favourites[name] = re.sub('&quot;','',value)
+            value = re.sub('&quot;','',value)
+            favourites[name] = unescape(value)
         names = sorted(favourites)
         fav = d.select('PVR: %s' % station,names)
         if fav == -1:
