@@ -192,7 +192,9 @@ def choose_stream(station):
         urls = []
         channels = {}
         for group in ["radio","tv"]:
-            urls = urls + xbmcvfs.listdir("pvr://channels/%s/All channels/" % group)[1]
+            dirs,files = xbmcvfs.listdir("pvr://channels/%s/" % group)
+            all_channels = dirs[0]
+            urls = urls + xbmcvfs.listdir("pvr://channels/%s/%s/" % (group,all_channels))[1]
         for group in ["radio","tv"]:
             groupid = "all%s" % group
             json_query = RPC.PVR.get_channels(channelgroupid=groupid, properties=[ "thumbnail", "channeltype", "hidden", "locked", "channel", "lastplayed", "broadcastnow" ] )
@@ -201,7 +203,7 @@ def choose_stream(station):
                     channelname = channel["label"]
                     streamUrl = urls[index]
                     index = index + 1
-                    url = "pvr://channels/%s/All channels/%s" % (group,streamUrl)
+                    url = "pvr://channels/%s/%s/%s" % (group,all_channels,streamUrl)
                     channels[channelname] = url
         labels = sorted(channels)
         selected_channel = d.select('PVR: %s' % station,labels)
