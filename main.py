@@ -265,7 +265,27 @@ def choose_stream(station):
              }
         plugin.play_video(item)
 
-
+@plugin.route('/channel_list')
+def channel_list():
+    streams = plugin.get_storage('streams')
+    stations = sorted(list(streams.keys()))
+    items = []
+    for station in stations:
+        context_items = []
+        context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station.encode("utf8")))))
+        context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station.encode("utf8")))))
+        if station in streams and streams[station]:
+            label = "[COLOR yellow]%s[/COLOR]" % station.strip()
+        else:
+            label = station.strip()
+        items.append(
+        {
+            'label': label,
+            'path': plugin.url_for('play_channel', station=station.encode("utf8")),
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
+            'context_menu': context_items,
+        })
+    return items
 
 @plugin.route('/stations_list/<stations>')
 def stations_list(stations):
@@ -432,9 +452,12 @@ def export_mapping():
     f = xbmcvfs.File('special://profile/addon_data/plugin.program.fixtures/channels.ini','wb')
     for channel in sorted(streams):
         stream = streams[channel]
-        s = "%s=%s\n" % (channel,stream)
-        f.write(s.encode("utf8"))
+        if not stream:
+            stream = ""
+        s = "%s=%s\n" % (channel,stream.decode("utf8"))
+        f.write(bytearray(s, 'utf_8'))
     f.close()
+
 
 @plugin.route('/import_mapping')
 def import_mapping():
@@ -444,13 +467,18 @@ def import_mapping():
     for line in lines:
         channel_stream = line.split('=',1)
         if len(channel_stream) == 2:
-            channel = channel_stream[0]
-            stream = channel_stream[1]
+            channel = channel_stream[0].decode("utf8")
+            stream = channel_stream[1].decode("utf8")
             streams[channel] = stream
 
 @plugin.route('/')
 def index():
     items = []
+    items.append({
+        'label': "Channels",
+        'path': plugin.url_for('channel_list'),
+        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/tv.png',
+    })
     dates = []
     now = datetime.datetime.now()
     for i in range(2,26):
