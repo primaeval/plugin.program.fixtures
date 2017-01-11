@@ -471,13 +471,22 @@ def import_mapping():
             stream = channel_stream[1].decode("utf8")
             streams[channel] = stream
 
+@plugin.route('/clear_channels')
+def clear_channels():
+    streams = plugin.get_storage('streams')
+    streams.clear()
+    xbmc.executebuiltin('Container.Refresh')
+
 @plugin.route('/')
 def index():
     items = []
+    context_items = []
+    context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
     items.append({
         'label': "Channels",
         'path': plugin.url_for('channel_list'),
         'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/tv.png',
+        'context_menu': context_items,
     })
     dates = []
     now = datetime.datetime.now()
