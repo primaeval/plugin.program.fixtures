@@ -64,6 +64,7 @@ def alternative_play(station):
 
 @plugin.route('/choose_stream/<station>')
 def choose_stream(station):
+    station = station.decode("utf8")
     streams = plugin.get_storage('streams')
     d = xbmcgui.Dialog()
     addons_ini = plugin.get_setting('addons.ini')
