@@ -103,7 +103,7 @@ def choose_stream(station):
             return
         for a in sorted(addons):
             for c in sorted(addons[a]):
-                n = c.lower().replace(' ','')
+                n = c.decode("utf8").lower().replace(' ','')
                 if n:
                     label = "[%s] %s" % (a,c)
                     if (s.startswith(n) or n.startswith(s)):
