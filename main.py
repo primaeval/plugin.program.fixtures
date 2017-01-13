@@ -313,10 +313,31 @@ def stations_list(stations):
 
     return items
 
+@plugin.route('/autoplay/<stream>/<start>/<end>')
+def autoplay(stream,start,end):
+    start_dt = datetime.datetime.fromtimestamp(float(start))
+    end_dt = datetime.datetime.fromtimestamp(float(end))
+    t = start_dt - datetime.datetime.now()
+    timeToNotification = ((t.days * 86400) + t.seconds) / 60
+    if timeToNotification < 0:
+        timeToNotification = 0
+    xbmc.executebuiltin('AlarmClock(%s-start,PlayMedia(%s),%d,True)' %
+        (stream+start+end, stream, timeToNotification))
+
+    t = end_dt - datetime.datetime.now()
+    timeToNotification = ((t.days * 86400) + t.seconds) / 60
+    if timeToNotification > 0:
+        xbmc.executebuiltin('AlarmClock(%s-end,PlayerControl(Stop),%d,True)' %
+            (stream+start+end, timeToNotification))
+
 @plugin.route('/channels_listing/<url>')
 def channels_listing(url):
     global big_list_view
     big_list_view = True
+
+    parts = url.split('/')
+    day = parts[5]
+
     streams = plugin.get_storage('streams')
     parsed_uri = urlparse(url)
     domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
@@ -374,6 +395,19 @@ def channels_listing(url):
             stations_str = ', '.join(stations)
 
         if match_time:
+            start_end = match_time.split(' - ')
+            start_hour,start_minute = start_end[0].split(':')
+            end_hour,end_minute = start_end[1].split(':')
+            if day == "today":
+                start = datetime.datetime.now()
+            elif day == "tomorrow":
+                start = datetime.datetime.now() + timedelta(days=1)
+            end = start
+            start = start.replace(hour=int(start_hour),minute=int(start_minute),second=0,microsecond=0)
+            end = end.replace(hour=int(end_hour),minute=int(end_minute),second=0,microsecond=0)
+            if end < start:
+                end = end + timedelta(days=1)
+
             if playable:
                 colour = "blue"
             else:
@@ -392,7 +426,9 @@ def channels_listing(url):
             item = {
                 'label' : label,
                 'thumbnail': local_icon,
-                'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8"))
+                'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8")),
+                'start' : start,
+                'end' : end,
             }
             for station in stations:
                 if station not in station_items:
@@ -404,13 +440,23 @@ def channels_listing(url):
     for station in sorted(station_items):
         items = station_items[station]
         for item in items:
-            new_item = item.copy()
+            new_item = {} #item.copy()
+            context_items = []
             if station in streams and streams[station]:
                 label = "[COLOR yellow]%s[/COLOR] %s" % (station,item["label"])
+                #start = datetime.datetime.now() + datetime.timedelta(seconds=5)
+                #end = start + datetime.timedelta(seconds=120)
+                start = item['start']
+                end = item['end']
+                start_time = str(int(time.mktime(start.timetuple())))
+                end_time = str(int(time.mktime(end.timetuple())))
+                context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station], start=start_time, end=end_time))))
             else:
                 label = "%s %s" % (station,item["label"])
             new_item['label'] = label
+            new_item['thumbnail'] = item['thumbnail']
             new_item['path'] = plugin.url_for('play_channel', station=station.encode("utf8"))
+            new_item['context_menu'] = context_items
             all_items.append(new_item)
     return all_items
 
