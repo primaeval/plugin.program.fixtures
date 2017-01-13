@@ -6,6 +6,8 @@
 <setting id="channels" label="Append Channels" type="bool" default="false" />
 <setting id="channels.prefix" label="List by Channels" type="bool" default="false" />
 <setting id="channels.hide" label="Hide Unplayable Matches" type="bool" default="false" />
+<setting type="sep"/>
+<setting id="stop" label="Stop After Autoplay" type="bool" default="true" />
 </category>
 <category label="Backup">
 <setting label="Export Channel Mappings" type="action" action="RunPlugin(plugin://plugin.program.fixtures/export_mapping)" />

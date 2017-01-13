@@ -1,3 +1,6 @@
+version 0.0.16
+- Settings \ Stop After Autoplay
+
 version 0.0.15
 - basic AutoPlay (won't work on Kodi restart)
 - Settings \ Hide Unplayable Matches

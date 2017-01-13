@@ -329,11 +329,12 @@ def autoplay(stream,start,end):
     xbmc.executebuiltin('AlarmClock(%s-start,PlayMedia(%s),%d,True)' %
         (stream+start+end, stream, timeToNotification))
 
-    t = end_dt - datetime.datetime.now()
-    timeToNotification = ((t.days * 86400) + t.seconds) / 60
-    if timeToNotification > 0:
-        xbmc.executebuiltin('AlarmClock(%s-end,PlayerControl(Stop),%d,True)' %
-            (stream+start+end, timeToNotification))
+    if plugin.get_setting('stop') == 'true':
+        t = end_dt - datetime.datetime.now()
+        timeToNotification = ((t.days * 86400) + t.seconds) / 60
+        if timeToNotification > 0:
+            xbmc.executebuiltin('AlarmClock(%s-end,PlayerControl(Stop),%d,True)' %
+                (stream+start+end, timeToNotification))
 
 @plugin.route('/channels_listing/<url>')
 def channels_listing(url):
