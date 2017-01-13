@@ -269,6 +269,8 @@ def choose_stream(station):
 
 @plugin.route('/channel_list')
 def channel_list():
+    global big_list_view
+    big_list_view = True
     streams = plugin.get_storage('streams')
     stations = sorted(list(streams.keys()))
     items = []
@@ -289,8 +291,10 @@ def channel_list():
         })
     return items
 
-@plugin.route('/stations_list/<stations>')
-def stations_list(stations):
+@plugin.route('/stations_list/<stations>/<start>/<end>/<label>')
+def stations_list(stations,start,end,label):
+    global big_list_view
+    big_list_view = True
     streams = plugin.get_storage('streams')
     items = []
 
@@ -299,13 +303,14 @@ def stations_list(stations):
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
         context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station.decode("utf8")], start=start, end=end))))
         if station in streams and streams[station]:
-            label = "[COLOR yellow]%s[/COLOR]" % station.strip()
+            new_label = "[COLOR yellow]%s[/COLOR] %s" % (station.strip(), label)
         else:
-            label = station.strip()
+            new_label = "[COLOR white]%s[/COLOR] %s" % (station.strip(), label)
         items.append(
         {
-            'label': label,
+            'label': new_label,
             'path': plugin.url_for('play_channel', station=station),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
             'context_menu': context_items,
@@ -426,15 +431,14 @@ def channels_listing(url):
             item = {
                 'label' : label,
                 'thumbnail': local_icon,
-                'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8")),
+                #'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8")),
                 'start' : start,
                 'end' : end,
             }
             for station in stations:
                 if station not in station_items:
                     station_items[station] = []
-                else:
-                    station_items[station].append(item)
+                station_items[station].append(item)
 
     all_items = []
     for station in sorted(station_items):
@@ -468,6 +472,10 @@ def run_channels_listing(url):
 def listing(url):
     global big_list_view
     big_list_view = True
+
+    parts = url.split('/')
+    day = parts[5]
+
     streams = plugin.get_storage('streams')
     parsed_uri = urlparse(url)
     domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
@@ -522,6 +530,21 @@ def listing(url):
             stations = ', '.join(stations)
 
         if match_time:
+            start_end = match_time.split(' - ')
+            start_hour,start_minute = start_end[0].split(':')
+            end_hour,end_minute = start_end[1].split(':')
+            if day == "today":
+                start = datetime.datetime.now()
+            elif day == "tomorrow":
+                start = datetime.datetime.now() + timedelta(days=1)
+            end = start
+            start = start.replace(hour=int(start_hour),minute=int(start_minute),second=0,microsecond=0)
+            end = end.replace(hour=int(end_hour),minute=int(end_minute),second=0,microsecond=0)
+            if end < start:
+                end = end + timedelta(days=1)
+            start_time = str(int(time.mktime(start.timetuple())))
+            end_time = str(int(time.mktime(end.timetuple())))
+
             if playable:
                 colour = "blue"
             else:
@@ -540,7 +563,7 @@ def listing(url):
             items.append({
                 'label' : label,
                 'thumbnail': local_icon,
-                'path': plugin.url_for('stations_list', stations=stations.encode("utf8"))
+                'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label)
             })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
     for image in images:
