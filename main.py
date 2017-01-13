@@ -1,4 +1,5 @@
 from xbmcswift2 import Plugin
+from xbmcswift2 import actions
 import os
 import re
 import requests
@@ -312,6 +313,111 @@ def stations_list(stations):
 
     return items
 
+@plugin.route('/channels_listing/<url>')
+def channels_listing(url):
+    global big_list_view
+    big_list_view = True
+    streams = plugin.get_storage('streams')
+    parsed_uri = urlparse(url)
+    domain = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
+    timezone = plugin.get_setting('timezone')
+    if timezone != "None":
+        s = requests.Session()
+        r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
+        data = s.get(url).content
+    else:
+        data = requests.get(url).content
+    if not data:
+        return
+    station_items = {}
+
+    matches = data.split('<div class="match')
+    images = {}
+    found_stations = {}
+    for match_div in matches[1:]:
+        soup = BeautifulSoup('<div class="match'+match_div)
+        sport_div = soup.find(class_=re.compile("sport"))
+        sport = "unknown"
+        if sport_div:
+            sport = sport_div.img["alt"]
+            icon = sport_div.img["src"]
+            if icon:
+                icon = domain+icon
+                images[icon] = "special://profile/addon_data/plugin.program.fixtures/icons/%s" % icon.rsplit('/',1)[-1]
+                local_icon = images[icon]
+            else:
+                icon = ''
+        match_time = soup.find(class_=re.compile("time"))
+        if match_time:
+            match_time = unescape(' '.join(match_time.stripped_strings))
+            match_time = match_time.replace("script async","script")
+        else:
+            pass
+            #log(soup)
+        competition = soup.find(class_=re.compile("competition"))
+        if competition:
+            competition = ' '.join(competition.stripped_strings)
+        fixture = soup.find(class_=re.compile("fixture"))
+        if fixture:
+            fixture = ' '.join(fixture.stripped_strings)
+        stations = soup.find(class_=re.compile("stations"))
+        playable = False
+        if stations:
+            stations = stations.stripped_strings
+            stations = list(stations)
+            for s in stations:
+                found_stations[s] = ""
+                if s not in streams:
+                    streams[s] = ""
+                elif streams[s]:
+                    playable = True
+            stations_str = ', '.join(stations)
+
+        if match_time:
+            if playable:
+                colour = "blue"
+            else:
+                colour = "dimgray"
+            if plugin.get_setting('channels') == 'true':
+                if '/anySport' in url:
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition, sport, stations_str)
+                else:
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (colour, match_time, fixture, competition, stations_str )
+            else:
+                if '/anySport' in url:
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR] %s" % (colour, match_time, fixture, competition, sport)
+                else:
+                    label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition)
+
+            item = {
+                'label' : label,
+                'thumbnail': local_icon,
+                'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8"))
+            }
+            for station in stations:
+                if station not in station_items:
+                    station_items[station] = []
+                else:
+                    station_items[station].append(item)
+
+    all_items = []
+    for station in sorted(station_items):
+        items = station_items[station]
+        for item in items:
+            new_item = item.copy()
+            if station in streams and streams[station]:
+                label = "[COLOR yellow]%s[/COLOR] %s" % (station,item["label"])
+            else:
+                label = "%s %s" % (station,item["label"])
+            new_item['label'] = label
+            new_item['path'] = plugin.url_for('play_channel', station=station.encode("utf8"))
+            all_items.append(new_item)
+    return all_items
+
+@plugin.route('/run_channels_listing/<url>')
+def run_channels_listing(url):
+    actions.update_view(plugin.url_for('channels_listing', url=url))
+
 @plugin.route('/listing/<url>')
 def listing(url):
     global big_list_view
@@ -439,11 +545,19 @@ def sports_index(day):
         background.paste(png, mask=png.split()[3]) # 3 is the alpha channel
         background.save(xbmc.translatePath(local_image))
         '''
+        if plugin.get_setting('channels.prefix') == 'true':
+            action = 'channels_listing'
+        else:
+            action = 'listing'
+        context_items = []
+        #TODO how do you update the view from the context menu?
+        #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'By Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for('channels_listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)))))
         items.append(
         {
             'label': name,
-            'path': plugin.url_for('listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
+            'path': plugin.url_for(action, url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
             'thumbnail': get_icon_path(id),
+            'context_menu': context_items,
         })
     return items
 
