@@ -407,6 +407,9 @@ def channels_listing(url):
                 start = datetime.datetime.now()
             elif day == "tomorrow":
                 start = datetime.datetime.now() + timedelta(days=1)
+            else:
+                day,month,year = day.split('-')
+                start = datetime.datetime(year,month,year)
             end = start
             start = start.replace(hour=int(start_hour),minute=int(start_minute),second=0,microsecond=0)
             end = end.replace(hour=int(end_hour),minute=int(end_minute),second=0,microsecond=0)
@@ -431,7 +434,6 @@ def channels_listing(url):
             item = {
                 'label' : label,
                 'thumbnail': local_icon,
-                #'path': plugin.url_for('stations_list', stations=stations_str.encode("utf8")),
                 'start' : start,
                 'end' : end,
             }
@@ -439,6 +441,17 @@ def channels_listing(url):
                 if station not in station_items:
                     station_items[station] = []
                 station_items[station].append(item)
+
+    xbmcvfs.mkdirs("special://profile/addon_data/icons/")
+    for image in images:
+        local_image = images[image]
+        if not xbmcvfs.exists(local_image):
+            xbmcvfs.copy(image,local_image)
+            png = Image.open(xbmc.translatePath(local_image))
+            png.load() # required for png.split()
+            background = Image.new("RGB", png.size, (255, 255, 255))
+            background.paste(png, mask=png.split()[3]) # 3 is the alpha channel
+            background.save(xbmc.translatePath(local_image))
 
     all_items = []
     for station in sorted(station_items):
@@ -448,8 +461,6 @@ def channels_listing(url):
             context_items = []
             if station in streams and streams[station]:
                 label = "[COLOR yellow]%s[/COLOR] %s" % (station,item["label"])
-                #start = datetime.datetime.now() + datetime.timedelta(seconds=5)
-                #end = start + datetime.timedelta(seconds=120)
                 start = item['start']
                 end = item['end']
                 start_time = str(int(time.mktime(start.timetuple())))
@@ -537,6 +548,9 @@ def listing(url):
                 start = datetime.datetime.now()
             elif day == "tomorrow":
                 start = datetime.datetime.now() + timedelta(days=1)
+            else:
+                day,month,year = day.split('-')
+                start = datetime.datetime(year,month,year)
             end = start
             start = start.replace(hour=int(start_hour),minute=int(start_minute),second=0,microsecond=0)
             end = end.replace(hour=int(end_hour),minute=int(end_minute),second=0,microsecond=0)
