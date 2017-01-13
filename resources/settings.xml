@@ -5,6 +5,7 @@
 <setting id="addons.ini" label="addons.ini" type="file" mask="addons.ini" />
 <setting id="channels" label="Append Channels" type="bool" default="false" />
 <setting id="channels.prefix" label="List by Channels" type="bool" default="false" />
+<setting id="channels.hide" label="Hide Unplayable Matches" type="bool" default="false" />
 </category>
 <category label="Backup">
 <setting label="Export Channel Mappings" type="action" action="RunPlugin(plugin://plugin.program.fixtures/export_mapping)" />

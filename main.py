@@ -431,6 +431,7 @@ def channels_listing(url):
                 else:
                     label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition)
 
+
             item = {
                 'label' : label,
                 'thumbnail': local_icon,
@@ -440,7 +441,9 @@ def channels_listing(url):
             for station in stations:
                 if station not in station_items:
                     station_items[station] = []
-                station_items[station].append(item)
+                hide = plugin.get_setting('channels.hide') == 'true'
+                if not hide or (hide and streams[station]):
+                    station_items[station].append(item)
 
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
     for image in images:
@@ -574,11 +577,13 @@ def listing(url):
                 else:
                     label =  "[COLOR %s]%s[/COLOR] %s [COLOR dimgray]%s[/COLOR]" % (colour, match_time, fixture, competition)
 
-            items.append({
-                'label' : label,
-                'thumbnail': local_icon,
-                'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label)
-            })
+            hide = plugin.get_setting('channels.hide') == 'true'
+            if not hide or (hide and playable):
+                items.append({
+                    'label' : label,
+                    'thumbnail': local_icon,
+                    'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label)
+                })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
     for image in images:
         local_image = images[image]
