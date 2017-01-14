@@ -470,6 +470,7 @@ def channels_listing(url):
                 start_time = str(int(time.mktime(start.timetuple())))
                 end_time = str(int(time.mktime(end.timetuple())))
                 context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station], start=start_time, end=end_time))))
+                context_items.append(('[COLOR yellow][B]Choose Stream[/B][/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station.encode("utf8")))))
             else:
                 label = "%s %s" % (station,item["label"])
             new_item['label'] = label
