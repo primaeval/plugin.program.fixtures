@@ -584,7 +584,7 @@ def listing(url):
                 items.append({
                     'label' : label,
                     'thumbnail': local_icon,
-                    'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label)
+                    'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label.encode("utf8"))
                 })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
     for image in images:
