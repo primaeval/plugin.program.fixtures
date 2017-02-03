@@ -2,7 +2,9 @@
 <category label="General">
 <setting id="country" label="Country Code" type="select" default="all" values="all|ai|al|ao|ar|au|az|ba|be|bg|br|ca|ch|cn|cy|cz|de|dk|en|es|fi|fr|gr|hk|hr|hu|id|ie|il|in|ir|is|it|jp|kr|lv|mt|mx|my|nl|no|nz|pl|pt|qa|ro|rs|ru|s2|se|sg|si|sk|th|tr|ua|uk|us|vn|wa|za" />
 <setting id="timezone" label="Time Zone" type="select" default="None" values="None|-12:00|-11:00|-10:00|-09:00|-08:00|-07:00|-06:00|-05:00|-04:00|-03:00|-02:00|-01:00|+00:00|+01:00|+02:00|+03:00|+04:00|+05:00|+06:00|+07:00|+08:00|+09:00|+10:00|+11:00|+12:00" />
-<setting id="addons.ini" label="addons.ini" type="file" mask="addons.ini" />
+<setting id="addons.ini.type" label="addons.ini Source" type="enum" default="0" values="File|Url"/>
+<setting id="addons.ini" label="addons.ini File" type="file" visible="eq(-1,0)" mask="*.ini" default=''/>
+<setting id="addons.ini.url" label="addons.ini Url" type="text" visible="eq(-2,1)" default=''/>
 <setting id="channels" label="Append Channels" type="bool" default="false" />
 <setting id="channels.prefix" label="List by Channels" type="bool" default="false" />
 <setting id="channels.hide" label="Hide Unplayable Matches" type="bool" default="false" />

@@ -68,8 +68,13 @@ def choose_stream(station):
     station = station.decode("utf8")
     streams = plugin.get_storage('streams')
     d = xbmcgui.Dialog()
-    addons_ini = plugin.get_setting('addons.ini')
+    if plugin.get_setting('addons.ini.type') == '0':
+        addons_ini = plugin.get_setting('addons.ini')
+    else:
+        addons_ini = plugin.get_setting('addons.ini.url')
+    log(addons_ini)
     data = xbmcvfs.File(addons_ini,'rb').read()
+    log(data)
     no_addons_ini = False
     if not data:
         no_addons_ini = True
