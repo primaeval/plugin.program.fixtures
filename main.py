@@ -350,8 +350,8 @@ def channels_listing(url):
     timezone = plugin.get_setting('timezone')
     if timezone != "None":
         s = requests.Session()
-        r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
-        data = s.get(url).content
+        #r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
+        data = s.get(url, cookies={"userTimeZoneGyf":timezone}).content
     else:
         data = requests.get(url).content
     if not data:
@@ -498,8 +498,8 @@ def listing(url):
     timezone = plugin.get_setting('timezone')
     if timezone != "None":
         s = requests.Session()
-        r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
-        data = s.get(url).content
+        #r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
+        data = s.get(url, cookies={"userTimeZoneGyf":timezone}).content
     else:
         data = requests.get(url).content
     if not data:
