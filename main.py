@@ -2,6 +2,7 @@ from xbmcswift2 import Plugin
 from xbmcswift2 import actions
 import os
 import re
+import urllib
 import requests
 import xbmc,xbmcaddon,xbmcvfs,xbmcgui
 import xbmcplugin
@@ -351,7 +352,8 @@ def channels_listing(url):
     if timezone != "None":
         s = requests.Session()
         #r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
-        data = s.get(url, cookies={"userTimeZoneGyf":timezone}).content
+        r = s.get(url, cookies={"userTimeZoneGyf":urllib.quote_plus(timezone)})
+        data = r.content
     else:
         data = requests.get(url).content
     if not data:
@@ -499,7 +501,8 @@ def listing(url):
     if timezone != "None":
         s = requests.Session()
         #r = s.get("http://www.getyourfixtures.com/setCookie.php?offset=%s" % timezone)
-        data = s.get(url, cookies={"userTimeZoneGyf":timezone}).content
+        r = s.get(url, cookies={"userTimeZoneGyf":urllib.quote_plus(timezone)})
+        data = r.content
     else:
         data = requests.get(url).content
     if not data:
