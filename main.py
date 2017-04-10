@@ -557,8 +557,8 @@ def listing(url):
             elif day == "tomorrow":
                 start = datetime.datetime.now() + timedelta(days=1)
             else:
-                day,month,year = day.split('-')
-                start = datetime.datetime(year,month,year)
+                d,m,y = day.split('-')
+                start = datetime.datetime(int(y),int(m),int(d))
             end = start
             start = start.replace(hour=int(start_hour),minute=int(start_minute),second=0,microsecond=0)
             end = end.replace(hour=int(end_hour),minute=int(end_minute),second=0,microsecond=0)
@@ -586,7 +586,7 @@ def listing(url):
             if not hide or (hide and playable):
                 items.append({
                     'label' : label,
-                    'thumbnail': local_icon,
+                    'thumbnail': get_icon_path(sport),
                     'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label.encode("utf8"))
                 })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
