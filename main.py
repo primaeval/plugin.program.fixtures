@@ -268,6 +268,60 @@ def choose_stream(station):
              }
         plugin.play_video(item)
 
+@plugin.route('/remove_search/<name>')
+def remove_search(name):
+    searches = plugin.get_storage('searches')
+    del searches[name]
+    xbmc.executebuiltin('Container.Refresh')
+
+@plugin.route('/new_search')
+def new_search():
+    d = xbmcgui.Dialog()
+    what = d.input("New Search")
+    if what:
+        searches = plugin.get_storage('searches')
+        searches[what] = ''
+        return search_for(what)
+
+@plugin.route('/search_for/<what>')
+def search_for(what):
+    if not what:
+        return
+
+    items = []
+    for day in ["Today","Tomorrow"]:
+        url = "http://www.getyourfixtures.com/all/live/%s/anySport" % day.lower()
+        items.append({
+            'label': day,
+            'path': plugin.url_for('listing', url=url, search="none"),
+            'thumbnail':get_icon_path('clock'),
+        })
+        items = items + listing(url,what)
+    return items
+
+@plugin.route('/searches')
+def searches():
+    searches = plugin.get_storage('searches')
+    items = []
+
+    items.append({
+        'label': 'New Search',
+        'path': plugin.url_for('new_search'),
+        'thumbnail':get_icon_path('search'),
+    })
+    for search in sorted(searches):
+        context_items = []
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove Search', 'XBMC.RunPlugin(%s)' %
+        (plugin.url_for(remove_search, name=search))))
+        items.append({
+            'label': search,
+            'path': plugin.url_for('search_for',what=search),
+            'thumbnail':get_icon_path('search'),
+            'context_menu': context_items,
+        })
+    return items
+
+
 @plugin.route('/channel_list')
 def channel_list():
     global big_list_view
@@ -337,8 +391,8 @@ def autoplay(stream,start,end):
             xbmc.executebuiltin('AlarmClock(%s-end,PlayerControl(Stop),%d,True)' %
                 (stream+start+end, timeToNotification))
 
-@plugin.route('/channels_listing/<url>')
-def channels_listing(url):
+@plugin.route('/channels_listing/<url>/<search>')
+def channels_listing(url,search):
     global big_list_view
     big_list_view = True
 
@@ -382,7 +436,6 @@ def channels_listing(url):
             match_time = match_time.replace("script async","script")
         else:
             pass
-            #log(soup)
         competition = soup.find(class_=re.compile("competition"))
         if competition:
             competition = ' '.join(competition.stripped_strings)
@@ -484,10 +537,10 @@ def channels_listing(url):
 
 @plugin.route('/run_channels_listing/<url>')
 def run_channels_listing(url):
-    actions.update_view(plugin.url_for('channels_listing', url=url))
+    actions.update_view(plugin.url_for('channels_listing', url=url, search="none")),
 
-@plugin.route('/listing/<url>')
-def listing(url):
+@plugin.route('/listing/<url>/<search>')
+def listing(url,search):
     global big_list_view
     big_list_view = True
 
@@ -529,7 +582,6 @@ def listing(url):
             match_time = match_time.replace("script async","script")
         else:
             pass
-            #log(soup)
         competition = soup.find(class_=re.compile("competition"))
         if competition:
             competition = ' '.join(competition.stripped_strings)
@@ -584,6 +636,9 @@ def listing(url):
 
             hide = plugin.get_setting('channels.hide') == 'true'
             if not hide or (hide and playable):
+                if search and search != "none":
+                    if not re.search(search,label,flags=re.IGNORECASE):
+                        continue
                 items.append({
                     'label' : label,
                     'thumbnail': get_icon_path(sport),
@@ -644,11 +699,11 @@ def sports_index(day):
             action = 'listing'
         context_items = []
         #TODO how do you update the view from the context menu?
-        #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'By Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for('channels_listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)))))
+        #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'By Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for('channels_listing', url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id), search=""))))
         items.append(
         {
             'label': name,
-            'path': plugin.url_for(action, url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id)),
+            'path': plugin.url_for(action, url='http://www.getyourfixtures.com/%s/live/%s/%s' % (country,day,id), search="none"),
             'thumbnail': get_icon_path(id),
             'context_menu': context_items,
         })
@@ -685,6 +740,12 @@ def clear_channels():
     streams.clear()
     xbmc.executebuiltin('Container.Refresh')
 
+@plugin.route('/clear_searches')
+def clear_searches():
+    searches = plugin.get_storage('searches')
+    searches.clear()
+    xbmc.executebuiltin('Container.Refresh')
+
 @plugin.route('/')
 def index():
     items = []
@@ -695,6 +756,11 @@ def index():
         'path': plugin.url_for('channel_list'),
         'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/tv.png',
         'context_menu': context_items,
+    })
+    items.append({
+        'label': "Search",
+        'path': plugin.url_for('searches'),
+        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
     })
     dates = []
     now = datetime.datetime.now()
