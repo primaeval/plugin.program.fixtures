@@ -351,8 +351,8 @@ def stations_list(stations,start,end,label):
     global big_list_view
     big_list_view = True
     streams = plugin.get_storage('streams')
+    playable_items = []
     items = []
-
     for station in stations.split(','):
         station = station.strip()
         context_items = []
@@ -361,9 +361,11 @@ def stations_list(stations,start,end,label):
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station.decode("utf8")], start=start, end=end))))
         if station in streams and streams[station]:
             new_label = "[COLOR yellow]%s[/COLOR] %s" % (station.strip(), label)
+            list = playable_items
         else:
             new_label = "[COLOR white]%s[/COLOR] %s" % (station.strip(), label)
-        items.append(
+            list = items
+        list.append(
         {
             'label': new_label,
             'path': plugin.url_for('play_channel', station=station),
@@ -371,7 +373,7 @@ def stations_list(stations,start,end,label):
             'context_menu': context_items,
         })
 
-    return items
+    return sorted(playable_items, key=lambda x: x["label"]) + sorted(items, key=lambda x: x["label"])
 
 @plugin.route('/autoplay/<stream>/<start>/<end>')
 def autoplay(stream,start,end):
@@ -590,6 +592,7 @@ def listing(url,search):
             fixture = ' '.join(fixture.stripped_strings)
         stations = soup.find(class_=re.compile("stations"))
         playable = False
+        playable_streams = []
         if stations:
             stations = stations.stripped_strings
             stations = list(stations)
@@ -597,6 +600,7 @@ def listing(url,search):
                 if s not in streams:
                     streams[s] = ""
                 elif streams[s]:
+                    playable_streams.append(streams[s])
                     playable = True
             stations = ', '.join(stations)
 
