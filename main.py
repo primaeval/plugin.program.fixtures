@@ -373,8 +373,8 @@ def stations_list(stations,start,end,label):
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
             'context_menu': context_items,
         })
-
-    return sorted(playable_items, key=lambda x: x["label"]) + sorted(items, key=lambda x: x["label"])
+    all_items = sorted(playable_items, key=lambda x: x["label"]) + sorted(items, key=lambda x: x["label"])
+    return all_items
 
 @plugin.route('/autoplay/<stream>/<start>/<end>')
 def autoplay(stream,start,end):
@@ -593,7 +593,7 @@ def listing(url,search):
             fixture = ' '.join(fixture.stripped_strings)
         stations = soup.find(class_=re.compile("stations"))
         playable = False
-        playable_streams = []
+        playable_stations = []
         if stations:
             stations = stations.stripped_strings
             stations = list(stations)
@@ -601,7 +601,7 @@ def listing(url,search):
                 if s not in streams:
                     streams[s] = ""
                 elif streams[s]:
-                    playable_streams.append(streams[s])
+                    playable_stations.append(s)
                     playable = True
             stations = ', '.join(stations)
 
@@ -644,10 +644,20 @@ def listing(url,search):
                 if search and search != "none":
                     if not re.search(search,label,flags=re.IGNORECASE):
                         continue
+                context_items = []
+                if (len(playable_stations) == 1) and (plugin.get_setting('autoplay') == 'true'):
+                    play_url = plugin.url_for('play_channel', station=playable_stations[0].encode("utf8"))
+                    autoplay = True
+                    context_items.append(('[COLOR yellow]Choose Channel[/COLOR]',  'ActivateWindow(%s,"%s")' % ('programs',
+                    plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label.encode("utf8")))))
+                else:
+                    play_url = plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label.encode("utf8"))
+                    autoplay = False
                 items.append({
                     'label' : label,
                     'thumbnail': get_icon_path(sport),
-                    'path': plugin.url_for('stations_list', stations=stations.encode("utf8"), start=start_time, end=end_time, label=label.encode("utf8"))
+                    'path': play_url,
+                    'context_menu': context_items,
                 })
     xbmcvfs.mkdirs("special://profile/addon_data/icons/")
     for image in images:
@@ -659,7 +669,6 @@ def listing(url,search):
             background = Image.new("RGB", png.size, (255, 255, 255))
             background.paste(png, mask=png.split()[3]) # 3 is the alpha channel
             background.save(xbmc.translatePath(local_image))
-
 
     return items
 
