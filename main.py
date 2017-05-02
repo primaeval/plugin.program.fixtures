@@ -289,8 +289,9 @@ def search_for(what):
         return
 
     items = []
+    country = plugin.get_setting('country')
     for day in ["Today","Tomorrow"]:
-        url = "http://www.getyourfixtures.com/all/live/%s/anySport" % day.lower()
+        url = "http://www.getyourfixtures.com/%s/live/%s/anySport" % (country,day.lower())
         items.append({
             'label': day,
             'path': plugin.url_for('listing', url=url, search="none"),
