@@ -762,10 +762,22 @@ def clear_searches():
 
 @plugin.route('/calendar/<sport>')
 def calendar(sport):
+    url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
+    html = requests.get(url).content
+    morph = re.search("Morph\.setPayload\('/data/bbc-morph-sportsdata-calendar/(.*?)'",html)
+    
+    if not morph: 
+        return
+    log(morph.group(1))
+    #Morph.setPayload('/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7'
     #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
-    url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
+    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
+    s = urllib.quote(morph.group(1),'')
+    log(s)
+    log(type(s))
+    url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2F' + s
     log(url)
-    j = requests.get(url).json()
+    j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
     log(j)
     moments = j["moments"]
     log(moments)
