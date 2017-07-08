@@ -760,9 +760,54 @@ def clear_searches():
     searches.clear()
     xbmc.executebuiltin('Container.Refresh')
 
+@plugin.route('/calendar/<sport>')
+def calendar(sport):
+    #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
+    url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
+    log(url)
+    j = requests.get(url).json()
+    log(j)
+    moments = j["moments"]
+    log(moments)
+    if not moments:
+        return
+    payload = json.loads(moments[0]["payload"])
+    log(payload)
+    log(type(payload))
+    tournamentList = payload["tournamentList"]
+    log(tournamentList)
+    items = []
+    for month in tournamentList:
+        tournaments = month["tournaments"]
+        log(tournaments)
+        for tournament in tournaments:
+            tournamentName = tournament["tournamentName"]["full"]
+            date = tournament["date"]
+            label = "%s - %s - %s" % (date["startDate"],date["endDate"],tournamentName)
+            items.append({
+                'label': label
+            })
+    return items
+
+def sports():
+    html = requests.get("http://www.bbc.co.uk/sport/all-sports").content
+    sports_list = re.findall('href="/sport/([^"]*?)">(.*?)</a>',html)
+    log(sports_list)
+    for sport in sports_list:
+        log(sport)
+    links = [x[0] for x in sports_list]
+    return links
+
 @plugin.route('/')
 def index():
     items = []
+    #log(sports())
+    for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
+        items.append({
+            'label': "%s" % sport,
+            'path': plugin.url_for('calendar', sport=sport),
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+        })
     context_items = []
     context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
     items.append({
