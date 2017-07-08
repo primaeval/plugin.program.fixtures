@@ -759,10 +759,53 @@ def clear_searches():
     searches = plugin.get_storage('searches')
     searches.clear()
     xbmc.executebuiltin('Container.Refresh')
-
+   
+@plugin.route('/thesportsdb_seasons/<idLeague>')
+def thesportsdb_seasons(idLeague):
+    url = "http://www.thesportsdb.com/api/v1/json/1/lookupleague.php?id=%s&s=all" % idLeague
+    j = requests.get(url).json()
+    log(j)
+    seasons = j["leagues"]
+    items = []
+    for season in [seasons[-1]]:
+        season_url = "http://www.thesportsdb.com/api/v1/json/8235861265252/eventsseason.php?id=%s&s=%s" % (idLeague,season["strSeason"])
+        log(season_url)
+        content = requests.get(season_url).content
+        log(content)
+        j = json.loads(content.split('<br />')[0])
+        log(j)
+        for event in j["events"]:
+            items.append({
+                "label": "%s - %s" % (event["dateEvent"],event["strEvent"])
+                #"path" : plugin.url_for("seasons", idLeague=league["idLeague"])
+            })
+    return items
+   
+@plugin.route('/thesportsdb')
+def thesportsdb():
+    #json = requests.get('http://www.thesportsdb.com/api/v1/json/8235861265252/all_leagues.php').json()
+    json = requests.get('http://www.thesportsdb.com/api/v1/json/1/all_leagues.php').json()
+    log(json)
+    leagues = json["leagues"]
+    items = []
+    for league in leagues:
+        items.append({
+            "label": "%s - %s" % (league["strSport"],league["strLeague"]),
+            "path" : plugin.url_for("thesportsdb_seasons", idLeague=league["idLeague"]),
+        })
+    return items
+    
 @plugin.route('/')
 def index():
     items = []
+    items.append({
+        'label': "TheSportsDb",
+        'path': plugin.url_for('thesportsdb'),
+        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+    })
+    
+    
+    
     context_items = []
     context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
     items.append({
