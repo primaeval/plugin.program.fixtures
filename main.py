@@ -760,11 +760,12 @@ def clear_searches():
     searches.clear()
     xbmc.executebuiltin('Container.Refresh')
 
-@plugin.route('/calendar1/<sport>')
-def calendar1(sport):
-    url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
+@plugin.route('/scores/<sport>')
+def scores(sport):
+    url = "http://www.bbc.co.uk/sport/"+sport+"/scores-fixtures"
     html = requests.get(url).content
-    morph = re.search("Morph\.setPayload\('/data/bbc-morph-sportsdata-calendar/(.*?)'",html)
+
+    morph = re.search("Morph\.setPayload\('/data/bbc-morph-football-scores-match-list-data/(.*?)'",html)
 
     if not morph:
         return
@@ -775,7 +776,7 @@ def calendar1(sport):
     s = urllib.quote(morph.group(1),'')
     log(s)
     log(type(s))
-    url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2F' + s
+    url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-football-scores-match-list-data%2F' + s
     log(url)
     j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
     log(j)
@@ -786,19 +787,35 @@ def calendar1(sport):
     payload = json.loads(moments[0]["payload"])
     log(payload)
     log(type(payload))
-    tournamentList = payload["tournamentList"]
-    log(tournamentList)
+    matchData = payload["matchData"]
+    log(matchData)
     items = []
-    for month in tournamentList:
-        tournaments = month["tournaments"]
-        log(tournaments)
-        for tournament in tournaments:
-            tournamentName = tournament["tournamentName"]["full"]
-            date = tournament["date"]
-            label = "%s - %s - %s" % (date["startDate"],date["endDate"],tournamentName)
-            items.append({
-                'label': label
-            })
+    for tournament in matchData:
+        tournament_name = tournament["tournamentMeta"]["tournamentName"]["full"]
+        
+        #tournaments = month["tournaments"]
+        #log(tournaments)
+        #for tournament in tournaments:
+            #tournamentName = tournament["tournamentName"]["full"]
+            #date = tournament["date"]
+            #label = "%s - %s - %s" % (date["startDate"],date["endDate"],tournamentName)
+        label = tournament_name
+        tournamentDatesWithEvents = tournament["tournamentDatesWithEvents"]
+        for date in tournamentDatesWithEvents:
+            log(date)
+            rounds = tournamentDatesWithEvents[date]
+            log(rounds)
+            for round in rounds:
+                log(round)
+                events = round["events"]
+                for event in events:
+                    startTime = event["startTime"]
+                    home = event["homeTeam"]["name"]["full"]
+                    away = event["awayTeam"]["name"]["full"]
+                    label = "%s - %s - %s v %s" % (startTime,tournament_name,home,away)
+                    items.append({
+                        'label': label
+                    })
     return items
 
 @plugin.route('/calendar/<sport>')
@@ -907,53 +924,9 @@ def fixtures(sport):
 
     log(items)
     return items
+    
 
-    morph = re.search("Morph\.setPayload\('/data/bbc-morph-sportsdata-calendar/(.*?)', (.*?)\)",html)
 
-    if not morph:
-        return
-    log(morph.group(0))
-    log(morph.group(1))
-    log(morph.group(2))
-    j = json.loads(morph.group(2))
-    log(j)
-    #Morph.setPayload('/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7'
-    #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
-    #s = urllib.quote(morph.group(1),'')
-    #log(s)
-    #log(type(s))
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2F' + s
-    #log(url)
-    #j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
-    #log(j)
-    #moments = j["moments"]
-    #log(moments)
-    #if not moments:
-    #    return
-    #payload = json.loads(moments[0]["payload"])
-    #log(payload)
-    #log(type(payload))
-    body = j["body"]
-    log(body)
-    tournamentList = body["tournamentList"]
-    log(tournamentList)
-    items = []
-    for month in tournamentList:
-        tournaments = month["tournaments"]
-        log(tournaments)
-        for tournament in tournaments:
-            tournamentName = tournament["tournamentName"]["full"]
-            try: venue = tournament["venue"]["name"]
-            except: venue = ""
-            try: stageName = tournament["stageName"]["full"]
-            except: stageName = ""
-            date = tournament["date"]
-            label = "%s - %s - %s (%s) [%s]" % (date["startDate"],date["endDate"],tournamentName,stageName,venue,)
-            items.append({
-                'label': label
-            })
-    return items
 
 
 def sports():
@@ -971,11 +944,23 @@ def index():
     #log(sports())
     for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
         items.append({
-            'label': "%s" % sport,
+            'label': "s: %s" % sport,
+            #'path': plugin.url_for('calendar', sport=sport),
+            'path': plugin.url_for('scores', sport=sport),
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+        })
+        items.append({
+            'label': "f: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
             'path': plugin.url_for('fixtures', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
         })
+        items.append({
+            'label': "c: %s" % sport,
+            #'path': plugin.url_for('calendar', sport=sport),
+            'path': plugin.url_for('calendar', sport=sport),
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+        })        
     context_items = []
     context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
     items.append({
