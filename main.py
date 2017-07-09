@@ -792,7 +792,7 @@ def scores(sport):
     items = []
     for tournament in matchData:
         tournament_name = tournament["tournamentMeta"]["tournamentName"]["full"]
-        
+
         #tournaments = month["tournaments"]
         #log(tournaments)
         #for tournament in tournaments:
@@ -868,7 +868,7 @@ def calendar(sport):
                 'label': label
             })
     return items
-    
+
 @plugin.route('/calendar_morph/<sport>')
 def calendar_morph(sport):
     #url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
@@ -919,7 +919,7 @@ def calendar_morph(sport):
             items.append({
                 'label': label
             })
-    return items    
+    return items
 
 @plugin.route('/fixtures/<sport>')
 def fixtures(sport):
@@ -976,7 +976,7 @@ def fixtures(sport):
 
     log(items)
     return items
-    
+
 
 
 
@@ -992,33 +992,63 @@ def sports():
 
 @plugin.route('/')
 def index():
+    '''
+    fixtures_list = []
+    calendar_list = []
+    scores_list = []
+    morph_list = []
+    for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
+        url = "http://www.bbc.co.uk/sport/"+sport+"/fixtures"
+        r = requests.get(url)
+        #log((r.status_code,sport))
+        if r.status_code == 200:
+            fixtures_list.append(sport)
+        url = "http://www.bbc.co.uk/sport/"+sport+"/scores-fixtures"
+        r = requests.get(url)
+        #log((r.status_code,sport))
+        if r.status_code == 200:
+            scores_list.append(sport)
+        url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
+        r = requests.get(url)
+        #log((r.status_code,sport))
+        if r.status_code == 200:
+            calendar_list.append(sport)
+    log(fixtures_list)
+    log(scores_list)
+    log(calendar_list)
+    '''
     items = []
     #log(sports())
-    for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
+    
+    #for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
+    for sport in ['football']:
         items.append({
             'label': "s: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
             'path': plugin.url_for('scores', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
         })
+    for sport in ['american-football', 'basketball', 'cricket', 'football', 'ice-hockey', 'rugby-league', 'rugby-union']:
         items.append({
             'label': "f: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
             'path': plugin.url_for('fixtures', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
         })
+    for sport in ['athletics', 'badminton', 'bowls', 'boxing', 'cycling', 'darts', 'equestrian', 'golf', 'horse-racing', 'motorsport', 'rowing', 'snooker', 'swimming', 'tennis', 'triathlon', 'winter-sports']:        
         items.append({
             'label': "c: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
             'path': plugin.url_for('calendar', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
-        })  
+        })
+    for sport in ["motorcycling","speedway"]:
         items.append({
             'label': "m: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
             'path': plugin.url_for('calendar_morph', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
-        })  
+        })
     context_items = []
     context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
     items.append({
