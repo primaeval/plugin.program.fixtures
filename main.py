@@ -977,7 +977,56 @@ def fixtures(sport):
     log(items)
     return items
 
+@plugin.route('/us_fixtures/<sport>')
+def us_fixtures(sport):
+    url = "http://www.bbc.co.uk/sport/"+sport+"/fixtures"
+    html = requests.get(url).content
+    log(html)
 
+
+    items = []
+    #table = html.split('<div id="cricket-match-list">')[1]
+    #table = html.split('match-list">')[1]
+    table = html
+    dates = table.split('<h3 class="gel-pica-bold gel-mb"')
+    for date in dates:
+        log(date)
+        d = re.search('>(.*?)<',date)
+        if d:
+            log(d.group(1))
+            d = d.group(1)
+        else:
+            continue
+        #continue
+        fixtures_block_list = date.split('<li class="list-ui__item gel-pb-"')
+        for fixture_block in fixtures_block_list:
+            log(fixture_block)
+            #continue
+
+
+            home = re.search('fixture-team-home\.0\.0\.0">(.*?)</span>',fixture_block)
+            if home:
+                log(home.group(1))
+                h = home.group(1)
+            else:
+                h = ""
+            away = re.search('fixture-team-away\.0\.0\.0">(.*?)</span>',fixture_block)
+            if away:
+                log("away")
+                log(away.group(1))
+                a = away.group(1)
+            else:
+                a = ""
+            if h or a:
+                label = "%s - %s v %s" % (d,h,a)
+                items.append({
+                    "label": label.strip()
+                })
+
+
+
+    log(items)
+    return items
 
 
 
@@ -1028,7 +1077,14 @@ def index():
             'path': plugin.url_for('scores', sport=sport),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
         })
-    for sport in ['american-football', 'basketball', 'cricket', 'football', 'ice-hockey', 'rugby-league', 'rugby-union']:
+    for sport in ['american-football', 'basketball', 'ice-hockey', ]:
+        items.append({
+            'label': "f: %s" % sport,
+            #'path': plugin.url_for('calendar', sport=sport),
+            'path': plugin.url_for('us_fixtures', sport=sport),
+            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+        })        
+    for sport in ['cricket', 'football', 'rugby-league', 'rugby-union']:
         items.append({
             'label': "f: %s" % sport,
             #'path': plugin.url_for('calendar', sport=sport),
