@@ -781,6 +781,32 @@ def thesportsdb_seasons(idLeague):
             })
     return items
    
+@plugin.route('/thesportsdb_next/<idLeague>')
+def thesportsdb_next(idLeague):
+    url = "http://www.thesportsdb.com/api/v1/json/8235861265252/eventsnextleague.php?id=%s" % idLeague
+    log(url)
+    content = requests.get(url).content
+    log(content)
+    j = json.loads(content.split('<br />')[0])
+    log(j)
+    return
+    seasons = j["leagues"]
+    items = []
+    for season in [seasons[-1]]:
+        season_url = "http://www.thesportsdb.com/api/v1/json/8235861265252/eventsseason.php?id=%s&s=%s" % (idLeague,season["strSeason"])
+        log(season_url)
+        content = requests.get(season_url).content
+        log(content)
+        j = json.loads(content.split('<br />')[0])
+        log(j)
+        for event in j["events"]:
+            items.append({
+                "label": "%s - %s" % (event["dateEvent"],event["strEvent"])
+                #"path" : plugin.url_for("seasons", idLeague=league["idLeague"])
+            })
+    return items   
+
+   
 @plugin.route('/thesportsdb')
 def thesportsdb():
     #json = requests.get('http://www.thesportsdb.com/api/v1/json/8235861265252/all_leagues.php').json()
@@ -792,6 +818,7 @@ def thesportsdb():
         items.append({
             "label": "%s - %s" % (league["strSport"],league["strLeague"]),
             "path" : plugin.url_for("thesportsdb_seasons", idLeague=league["idLeague"]),
+            #"path" : plugin.url_for("thesportsdb_next", idLeague=league["idLeague"]),
         })
     return items
     
