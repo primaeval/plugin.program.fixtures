@@ -826,6 +826,8 @@ def bbc_calendar(sport):
                 stageName = "(%s)" % stageName
             if venue:
                 venue = "[%s]" % venue
+            else:
+                venue = ""
             if plugin.get_setting('venue') == 'true':
                 label = "%s - [B]%s[/B] %s %s" % (date_label,tournamentName,stageName,venue,)
             else:
