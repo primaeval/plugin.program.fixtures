@@ -20,7 +20,7 @@ from datetime import timedelta
 from rpc import RPC
 
 plugin = Plugin()
-big_list_view = False
+big_list_view = True
 
 def log(x):
     xbmc.log(repr(x))
@@ -760,102 +760,56 @@ def clear_searches():
     searches.clear()
     xbmc.executebuiltin('Container.Refresh')
 
-@plugin.route('/scores/<sport>')
-def scores(sport):
+@plugin.route('/bbc_scores/<sport>')
+def bbc_scores(sport):
     url = "http://www.bbc.co.uk/sport/"+sport+"/scores-fixtures"
     html = requests.get(url).content
-
     morph = re.search("Morph\.setPayload\('/data/bbc-morph-football-scores-match-list-data/(.*?)'",html)
-
     if not morph:
         return
-    log(morph.group(1))
-    #Morph.setPayload('/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7'
-    #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
     s = urllib.quote(morph.group(1),'')
-    log(s)
-    log(type(s))
     url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-football-scores-match-list-data%2F' + s
-    log(url)
     j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
-    log(j)
     moments = j["moments"]
-    log(moments)
     if not moments:
         return
     payload = json.loads(moments[0]["payload"])
-    log(payload)
-    log(type(payload))
     matchData = payload["matchData"]
-    log(matchData)
     items = []
     for tournament in matchData:
         tournament_name = tournament["tournamentMeta"]["tournamentName"]["full"]
-
-        #tournaments = month["tournaments"]
-        #log(tournaments)
-        #for tournament in tournaments:
-            #tournamentName = tournament["tournamentName"]["full"]
-            #date = tournament["date"]
-            #label = "%s - %s - %s" % (date["startDate"],date["endDate"],tournamentName)
         label = tournament_name
         tournamentDatesWithEvents = tournament["tournamentDatesWithEvents"]
         for date in tournamentDatesWithEvents:
-            log(date)
             rounds = tournamentDatesWithEvents[date]
-            log(rounds)
             for round in rounds:
-                log(round)
                 events = round["events"]
                 for event in events:
-                    startTime = event["startTime"]
+                    ts = event["startTime"]
+                    dt = datetime.datetime.strptime(ts[:-7],'%Y-%m-%dT%H:%M:%S')+ datetime.timedelta(hours=int(ts[-5:-3]), minutes=int(ts[-2:]))*int(ts[-6:-5]+'1')
                     home = event["homeTeam"]["name"]["full"]
                     away = event["awayTeam"]["name"]["full"]
-                    label = "%s - %s - %s v %s" % (startTime,tournament_name,home,away)
+                    label = "%s - [B]%s v %s[/B] (%s)" % (dt.strftime("%Y-%m-%d %H:%M"),home,away,tournament_name)
                     items.append({
-                        'label': label
+                        'label': label,
+                        'path': plugin.url_for('bbc_scores', sport=sport),
                     })
     return items
 
-@plugin.route('/calendar/<sport>')
-def calendar(sport):
+@plugin.route('/bbc_calendar/<sport>')
+def bbc_calendar(sport):
     url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
     html = requests.get(url).content
     morph = re.search("Morph\.setPayload\('/data/bbc-morph-sportsdata-calendar/(.*?)', (.*?)\)",html)
 
     if not morph:
         return
-    log(morph.group(0))
-    log(morph.group(1))
-    log(morph.group(2))
     j = json.loads(morph.group(2))
-    log(j)
-    #Morph.setPayload('/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7'
-    #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
-    #s = urllib.quote(morph.group(1),'')
-    #log(s)
-    #log(type(s))
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2F' + s
-    #log(url)
-    #j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
-    #log(j)
-    #moments = j["moments"]
-    #log(moments)
-    #if not moments:
-    #    return
-    #payload = json.loads(moments[0]["payload"])
-    #log(payload)
-    #log(type(payload))
     body = j["body"]
-    log(body)
     tournamentList = body["tournamentList"]
-    log(tournamentList)
     items = []
     for month in tournamentList:
         tournaments = month["tournaments"]
-        log(tournaments)
         for tournament in tournaments:
             tournamentName = tournament["tournamentName"]["full"]
             try: venue = tournament["venue"]["name"]
@@ -863,51 +817,37 @@ def calendar(sport):
             try: stageName = tournament["stageName"]["full"]
             except: stageName = ""
             date = tournament["date"]
-            label = "%s - %s - %s (%s) [%s]" % (date["startDate"],date["endDate"],tournamentName,stageName,venue,)
+            startDate = date["startDate"]
+            date_label = startDate
+            endDate = date["endDate"]
+            if endDate:
+                date_label += " - " + endDate 
+            if stageName:
+                stageName = "(%s)" % stageName
+            if venue:
+                venue = "[%s]" % venue
+            if plugin.get_setting('venue') == 'true':
+                label = "%s - [B]%s[/B] %s %s" % (date_label,tournamentName,stageName,venue,)
+            else:
+                label = "%s - [B]%s[/B] %s" % (date_label,tournamentName,stageName)
             items.append({
-                'label': label
+                'label': label,
+                'path': plugin.url_for('bbc_calendar', sport=sport),
             })
     return items
 
-@plugin.route('/calendar_morph/<sport>')
-def calendar_morph(sport):
-    #url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
-    #html = requests.get(url).content
-    #morph = re.search("Morph\.setPayload\('/data/bbc-morph-sportsdata-calendar/(.*?)', (.*?)\)",html)
-
-    #if not morph:
-    #    return
-    #log(morph.group(0))
-    #log(morph.group(1))
-    #log(morph.group(2))
-    #j = json.loads(morph.group(2))
-    #log(j)
-    #Morph.setPayload('/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7'
-    #/data/bbc-morph-sportsdata-calendar/source/tournaments/sport/golf/stage-end-date-after/today/version/1.0.7
+@plugin.route('/bbc_calendar_morph/<sport>')
+def bbc_calendar_morph(sport):
     url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2Fend-date-after%2Ftoday%2Fsource%2Fworld-sports-calendar%2Fsport%2F'+sport+'%2Fversion%2F1.0.5'
-    #s = urllib.quote(morph.group(1),'')
-    #log(s)
-    #log(type(s))
-    #url = 'http://push.api.bbci.co.uk/p?t=morph%3A%2F%2Fdata%2Fbbc-morph-sportsdata-calendar%2F' + s
-    log(url)
     j = requests.get(url,headers={"user-agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0"}).json()
-    log(j)
     moments = j["moments"]
-    log(moments)
     if not moments:
         return
     payload = json.loads(moments[0]["payload"])
-    log(payload)
-    log(type(payload))
-    #body = j["body"]
-    #log(body)
-    #tournamentList = body["tournamentList"]
     tournamentList = payload["tournamentList"]
-    log(tournamentList)
     items = []
     for month in tournamentList:
         tournaments = month["tournaments"]
-        log(tournaments)
         for tournament in tournaments:
             tournamentName = tournament["tournamentName"]["full"]
             try: venue = tournament["venue"]["name"]
@@ -915,117 +855,110 @@ def calendar_morph(sport):
             try: stageName = tournament["stageName"]["full"]
             except: stageName = ""
             date = tournament["date"]
-            label = "%s - %s - %s (%s) [%s]" % (date["startDate"],date["endDate"],tournamentName,stageName,venue,)
+            startDate = date["startDate"]
+            date_label = startDate
+            endDate = date["endDate"]
+            if endDate:
+                date_label += " - " + endDate 
+            if stageName:
+                stageName = "(%s)" % stageName
+            if venue:
+                venue = "[%s]" % venue
+            else:
+                venue = ""
+            if plugin.get_setting('venue') == 'true':
+                label = "%s - [B]%s[/B] %s %s" % (date_label,tournamentName,stageName,venue,)
+            else:
+                label = "%s - [B]%s[/B] %s" % (date_label,tournamentName,stageName)            
             items.append({
-                'label': label
+                'label': label,
+                'path': plugin.url_for('bbc_calendar_morph', sport=sport),
             })
     return items
 
-@plugin.route('/fixtures/<sport>')
-def fixtures(sport):
+@plugin.route('/bbc_fixtures/<sport>')
+def bbc_fixtures(sport):
     url = "http://www.bbc.co.uk/sport/"+sport+"/fixtures"
     html = requests.get(url).content
-    log(html)
-
-
     items = []
-    #table = html.split('<div id="cricket-match-list">')[1]
-    #table = html.split('match-list">')[1]
     table = html
     dates = table.split('<h3')
     for date in dates:
-        log(date)
         d = re.search('data-role="date">(.*?)<',date)
         if d:
-            log(d.group(1))
             d = d.group(1)
+            d = d.split()
+            if len(d) == 4:
+                day = re.sub('[a-z]*','',d[1])
+                month = d[2]
+                year = d[3]
+                dt = datetime.datetime.strptime("%s %s %s" % (day,month,year),"%d %B %Y")            
         else:
             continue
         fixtures_block_list = date.split('<h4')
         for fixture_block in fixtures_block_list:
             competition = re.search('data-role="competition-name">(.*?)<',fixture_block)
             if competition:
-                log(competition.group(1))
-                c = competition.group(1)
+                c = "(%s)" % competition.group(1).strip()
             else:
                 c = ''
             fixtures = fixture_block.split("list-ui__item")
             for fixture in fixtures:
-                log(fixture)
-
                 home = re.search('<abbr title="([^>]*?)"[^>]*?data-role="home-team"',fixture)
                 if home:
-                    log(home.group(1))
                     h = home.group(1)
                 else:
                     h = ""
                 away = re.search('<abbr title="([^>]*?)"[^>]*?data-role="away-team"',fixture)
                 if away:
-                    log("away")
-                    log(away.group(1))
                     a = away.group(1)
                 else:
                     a = ""
                 if h or a:
-                    label = "%s - %s v %s - %s" % (d,h,a,c)
+                    label = "%s - [B]%s v %s[/B] %s" % (dt.strftime("%Y-%m-%d"),h,a,c)
                     items.append({
                         "label": label
                     })
-
-
-
-    log(items)
     return items
 
-@plugin.route('/us_fixtures/<sport>')
-def us_fixtures(sport):
+@plugin.route('/bbc_us_fixtures/<sport>')
+def bbc_us_fixtures(sport):
     url = "http://www.bbc.co.uk/sport/"+sport+"/fixtures"
     html = requests.get(url).content
-    log(html)
-
-
     items = []
-    #table = html.split('<div id="cricket-match-list">')[1]
-    #table = html.split('match-list">')[1]
     table = html
     dates = table.split('<h3 class="gel-pica-bold gel-mb"')
     for date in dates:
-        log(date)
         d = re.search('>(.*?)<',date)
+        dt = None        
         if d:
-            log(d.group(1))
             d = d.group(1)
+            d = d.split()
+            if len(d) == 4:
+                day = re.sub('[a-z]*','',d[1])
+                month = d[2]
+                year = d[3]
+                dt = datetime.datetime.strptime("%s %s %s" % (day,month,year),"%d %B %Y")
         else:
             continue
-        #continue
         fixtures_block_list = date.split('<li class="list-ui__item gel-pb-"')
         for fixture_block in fixtures_block_list:
-            log(fixture_block)
-            #continue
-
-
             home = re.search('fixture-team-home\.0\.0\.0">(.*?)</span>',fixture_block)
             if home:
-                log(home.group(1))
                 h = home.group(1)
             else:
                 h = ""
             away = re.search('fixture-team-away\.0\.0\.0">(.*?)</span>',fixture_block)
             if away:
-                log("away")
-                log(away.group(1))
                 a = away.group(1)
             else:
                 a = ""
-            if h or a:
-                label = "%s - %s v %s" % (d,h,a)
+            if h or a:           
+                label = "%s - %s v %s" % (dt.strftime("%Y-%m-%d"),h,a)
                 items.append({
-                    "label": label.strip()
+                    "label": label.strip(),
+                    'path': plugin.url_for('bbc_us_fixtures', sport=sport),
                 })
-
-
-
-    log(items)
     return items
 
 
@@ -1038,10 +971,8 @@ def sports():
         log(sport)
     links = [x[0] for x in sports_list]
     return links
-
-@plugin.route('/')
-def index():
-    '''
+    
+def bbc_index():
     fixtures_list = []
     calendar_list = []
     scores_list = []
@@ -1049,92 +980,56 @@ def index():
     for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
         url = "http://www.bbc.co.uk/sport/"+sport+"/fixtures"
         r = requests.get(url)
-        #log((r.status_code,sport))
         if r.status_code == 200:
             fixtures_list.append(sport)
         url = "http://www.bbc.co.uk/sport/"+sport+"/scores-fixtures"
         r = requests.get(url)
-        #log((r.status_code,sport))
         if r.status_code == 200:
             scores_list.append(sport)
         url = "http://www.bbc.co.uk/sport/"+sport+"/calendar"
         r = requests.get(url)
-        #log((r.status_code,sport))
         if r.status_code == 200:
             calendar_list.append(sport)
     log(fixtures_list)
     log(scores_list)
     log(calendar_list)
-    '''
-    items = []
-    #log(sports())
+
+@plugin.route('/')
+def index():
+    global big_list_view
+    big_list_view = False
     
-    #for sport in ["motor-racing","motorcycling","speedway",'all-sports', 'american-football', 'archery', 'athletics', 'badminton', 'baseball', 'basketball', 'bowls', 'boxing', 'canoeing', 'cricket', 'curling', 'cycling', 'darts', 'disability-sport', 'diving', 'equestrian', 'fencing', 'football', 'formula1', 'northern-ireland/gaelic-games', 'golf', 'gymnastics', 'handball', 'hockey', 'horse-racing', 'ice-hockey', 'judo', 'modern-pentathlon', 'motorsport', 'netball', 'olympics', 'rowing', 'rugby-league', 'rugby-union', 'sailing', 'shooting', 'snooker', 'squash', 'swimming', 'table-tennis', 'taekwondo', 'tennis', 'triathlon', 'volleyball', 'weightlifting', 'winter-sports', 'wrestling']:
+    items = []
+    
     for sport in ['football']:
         items.append({
-            'label': "s: %s" % sport,
-            #'path': plugin.url_for('calendar', sport=sport),
-            'path': plugin.url_for('scores', sport=sport),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('bbc_scores', sport=sport),
         })
     for sport in ['american-football', 'basketball', 'ice-hockey', ]:
         items.append({
-            'label': "f: %s" % sport,
-            #'path': plugin.url_for('calendar', sport=sport),
-            'path': plugin.url_for('us_fixtures', sport=sport),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('bbc_us_fixtures', sport=sport),
         })        
-    for sport in ['cricket', 'football', 'rugby-league', 'rugby-union']:
+    for sport in ['cricket', 'rugby-league', 'rugby-union']:
         items.append({
-            'label': "f: %s" % sport,
-            #'path': plugin.url_for('calendar', sport=sport),
-            'path': plugin.url_for('fixtures', sport=sport),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('bbc_fixtures', sport=sport),
         })
     for sport in ['athletics', 'badminton', 'bowls', 'boxing', 'cycling', 'darts', 'equestrian', 'golf', 'horse-racing', 'motorsport', 'rowing', 'snooker', 'swimming', 'tennis', 'triathlon', 'winter-sports']:        
         items.append({
-            'label': "c: %s" % sport,
-            #'path': plugin.url_for('calendar', sport=sport),
-            'path': plugin.url_for('calendar', sport=sport),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('bbc_calendar', sport=sport),
         })
     for sport in ["motorcycling","speedway"]:
         items.append({
-            'label': "m: %s" % sport,
-            #'path': plugin.url_for('calendar', sport=sport),
-            'path': plugin.url_for('calendar_morph', sport=sport),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
-        })
-    context_items = []
-    context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
-    items.append({
-        'label': "Channels",
-        'path': plugin.url_for('channel_list'),
-        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/tv.png',
-        'context_menu': context_items,
-    })
-    items.append({
-        'label': "Search",
-        'path': plugin.url_for('searches'),
-        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/search.png',
-    })
-    dates = []
-    now = datetime.datetime.now()
-    for i in range(2,26):
-        day = datetime.datetime.now() + timedelta(days=i)
-        date = day.strftime("%d-%m-%Y")
-        dates.append(date)
-    for day in ["Today","Tomorrow"]+dates:
-        items.append(
-        {
-            'label': day,
-            'path': plugin.url_for('sports_index', day=day.lower()),
-            'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('bbc_calendar_morph', sport=sport),
         })
 
-    return items
+    return sorted(items, key=lambda x: x["label"])
 
 if __name__ == '__main__':
     plugin.run()
     if big_list_view:
-        plugin.set_view_mode(51)
+        plugin.set_view_mode(int(plugin.get_setting('view')))
