@@ -956,7 +956,7 @@ def bbc_us_fixtures(sport):
             else:
                 a = ""
             if h or a:           
-                label = "%s - %s v %s" % (dt.strftime("%Y-%m-%d"),h,a)
+                label = "%s - [B]%s v %s[/B]" % (dt.strftime("%Y-%m-%d"),h,a)
                 items.append({
                     "label": label.strip(),
                     'path': plugin.url_for('bbc_us_fixtures', sport=sport),
