@@ -789,10 +789,11 @@ def bbc_scores(sport):
                     dt = datetime.datetime.strptime(ts[:-7],'%Y-%m-%dT%H:%M:%S')+ datetime.timedelta(hours=int(ts[-5:-3]), minutes=int(ts[-2:]))*int(ts[-6:-5]+'1')
                     home = event["homeTeam"]["name"]["full"]
                     away = event["awayTeam"]["name"]["full"]
+                    search = "%s*%s" % (home.replace('Women','').strip(),away.replace('Women','').strip())
                     label = "%s - [B]%s v %s[/B] (%s)" % (dt.strftime("%Y-%m-%d %H:%M"),home,away,tournament_name)
                     items.append({
                         'label': label,
-                        'path': plugin.url_for('bbc_scores', sport=sport),
+                        "path" : "plugin://plugin.video.tvlistings.xmltv/search/%s" % search
                     })
     return items
 
@@ -821,7 +822,7 @@ def bbc_calendar(sport):
             date_label = startDate
             endDate = date["endDate"]
             if endDate:
-                date_label += " - " + endDate 
+                date_label += " - " + endDate
             if stageName:
                 stageName = "(%s)" % stageName
             if venue:
@@ -861,7 +862,7 @@ def bbc_calendar_morph(sport):
             date_label = startDate
             endDate = date["endDate"]
             if endDate:
-                date_label += " - " + endDate 
+                date_label += " - " + endDate
             if stageName:
                 stageName = "(%s)" % stageName
             if venue:
@@ -871,12 +872,13 @@ def bbc_calendar_morph(sport):
             if plugin.get_setting('venue') == 'true':
                 label = "%s - [B]%s[/B] %s %s" % (date_label,tournamentName,stageName,venue,)
             else:
-                label = "%s - [B]%s[/B] %s" % (date_label,tournamentName,stageName)            
+                label = "%s - [B]%s[/B] %s" % (date_label,tournamentName,stageName)
             items.append({
                 'label': label,
                 'path': plugin.url_for('bbc_calendar_morph', sport=sport),
             })
     return items
+
 
 @plugin.route('/bbc_fixtures/<sport>')
 def bbc_fixtures(sport):
@@ -894,7 +896,7 @@ def bbc_fixtures(sport):
                 day = re.sub('[a-z]*','',d[1])
                 month = d[2]
                 year = d[3]
-                dt = datetime.datetime.strptime("%s %s %s" % (day,month,year),"%d %B %Y")            
+                dt = datetime.datetime.strptime("%s %s %s" % (day,month,year),"%d %B %Y")
         else:
             continue
         fixtures_block_list = date.split('<h4')
@@ -917,9 +919,11 @@ def bbc_fixtures(sport):
                 else:
                     a = ""
                 if h or a:
+                    search = "%s*%s" % (h,a)
                     label = "%s - [B]%s v %s[/B] %s" % (dt.strftime("%Y-%m-%d"),h,a,c)
                     items.append({
-                        "label": label
+                        "label": label,
+                        "path" : "plugin://plugin.video.tvlistings.xmltv/search/%s" % search
                     })
     return items
 
@@ -932,7 +936,7 @@ def bbc_us_fixtures(sport):
     dates = table.split('<h3 class="gel-pica-bold gel-mb"')
     for date in dates:
         d = re.search('>(.*?)<',date)
-        dt = None        
+        dt = None
         if d:
             d = d.group(1)
             d = d.split()
@@ -955,11 +959,12 @@ def bbc_us_fixtures(sport):
                 a = away.group(1)
             else:
                 a = ""
-            if h or a:           
+            if h or a:
+                search = "%s*%s" % (h,a)
                 label = "%s - [B]%s v %s[/B]" % (dt.strftime("%Y-%m-%d"),h,a)
                 items.append({
                     "label": label.strip(),
-                    'path': plugin.url_for('bbc_us_fixtures', sport=sport),
+                     "path" : "plugin://plugin.video.tvlistings.xmltv/search/%s" % search
                 })
     return items
 
@@ -973,7 +978,7 @@ def sports():
         log(sport)
     links = [x[0] for x in sports_list]
     return links
-    
+
 def bbc_index():
     fixtures_list = []
     calendar_list = []
@@ -1000,9 +1005,9 @@ def bbc_index():
 def index():
     global big_list_view
     big_list_view = False
-    
+
     items = []
-    
+
     for sport in ['football']:
         items.append({
             'label': "%s" % sport.replace('-',' ').title(),
@@ -1012,13 +1017,13 @@ def index():
         items.append({
             'label': "%s" % sport.replace('-',' ').title(),
             'path': plugin.url_for('bbc_us_fixtures', sport=sport),
-        })        
+        })
     for sport in ['cricket', 'rugby-league', 'rugby-union']:
         items.append({
             'label': "%s" % sport.replace('-',' ').title(),
             'path': plugin.url_for('bbc_fixtures', sport=sport),
         })
-    for sport in ['athletics', 'badminton', 'bowls', 'boxing', 'cycling', 'darts', 'equestrian', 'golf', 'horse-racing', 'motorsport', 'rowing', 'snooker', 'swimming', 'tennis', 'triathlon', 'winter-sports']:        
+    for sport in ['athletics', 'badminton', 'bowls', 'boxing', 'cycling', 'darts', 'equestrian', 'golf', 'horse-racing', 'motorsport', 'rowing', 'snooker', 'swimming', 'tennis', 'triathlon', 'winter-sports']:
         items.append({
             'label': "%s" % sport.replace('-',' ').title(),
             'path': plugin.url_for('bbc_calendar', sport=sport),
