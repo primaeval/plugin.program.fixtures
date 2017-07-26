@@ -1051,6 +1051,7 @@ def thefixtures(sport):
             if date not in ["Fundraising",'Timezone Converter']:
                 items.append({
                     "label": date,
+                    'thumbnail':get_icon_path('calendar'),
                 })
         elif match[1] == '1':
             fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
@@ -1072,7 +1073,8 @@ def thefixtures(sport):
                 path = plugin.url_for('stations_list', stations=channels, start=start_time, end=end_time, label=fixture)
                 items.append({
                     "label": label,
-                    "path": path
+                    "path": path,
+                    'thumbnail':get_icon_path('clock'),
                 })
     return items
 
@@ -1087,6 +1089,7 @@ def thefixtures_index():
         items.append({
             'label': "%s" % sport.replace('-',' ').title(),
             'path': plugin.url_for('thefixtures', sport=sport),
+            'thumbnail':get_icon_path(sport),
         })
     return sorted(items, key=lambda x: x["label"])
 
@@ -1097,6 +1100,15 @@ def index():
     big_list_view = False
 
     items = []
+
+    context_items = []
+    context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Clear Channels', 'XBMC.RunPlugin(%s)' % (plugin.url_for(clear_channels))))
+    items.append({
+        'label': "Channels",
+        'path': plugin.url_for('channel_list'),
+        'thumbnail': 'special://home/addons/plugin.program.fixtures/resources/img/tv.png',
+        'context_menu': context_items,
+    })
 
     items.append({
         'label': "BBC Sport",
