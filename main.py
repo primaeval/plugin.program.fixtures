@@ -1001,8 +1001,8 @@ def bbc_index():
     log(scores_list)
     log(calendar_list)
 
-@plugin.route('/')
-def index():
+@plugin.route('/bbc_sports_index')
+def bbc_sports_index():
     global big_list_view
     big_list_view = False
 
@@ -1035,6 +1035,67 @@ def index():
         })
 
     return sorted(items, key=lambda x: x["label"])
+
+
+@plugin.route('/thefixtures/<sport>')
+def thefixtures(sport):
+    url = "http://thefixtures.website/"+sport
+    html = requests.get(url).content
+    items = []
+    matches = re.findall(r'(<h([0-9]).*?</h\2>)',html,flags=(re.MULTILINE|re.DOTALL))
+    fixture = ''
+    for match in matches:
+        if match[1] == '2':
+            date = re.sub('<.*?>','',match[0]).strip('.\n')
+            if date not in ["Fundraising",'Timezone Converter']:
+                items.append({
+                    "label": date,
+                })
+        elif match[1] == '1':
+            fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
+        elif match[1] == '3':
+            channels = re.sub('<br />',' |',match[0])
+            channels = re.sub('<.*?>','',channels).strip('.\n').replace('\n',' ')
+            if channels:
+                label = "%s [%s]" % (fixture,channels)
+                items.append({
+                    "label": label,
+                })
+    return items
+
+
+@plugin.route('/thefixtures_index')
+def thefixtures_index():
+    global big_list_view
+    big_list_view = False
+
+    items = []
+    for sport in ['football','cricket','rugby','boxingmma','gaelic-games','baseball']:
+        items.append({
+            'label': "%s" % sport.replace('-',' ').title(),
+            'path': plugin.url_for('thefixtures', sport=sport),
+        })
+    return sorted(items, key=lambda x: x["label"])
+
+
+@plugin.route('/')
+def index():
+    global big_list_view
+    big_list_view = False
+
+    items = []
+
+    items.append({
+        'label': "BBC Sport",
+        'path': plugin.url_for('bbc_sports_index'),
+    })
+    items.append({
+        'label': "The Fixtures",
+        'path': plugin.url_for('thefixtures_index'),
+    })
+
+    return items
+
 
 if __name__ == '__main__':
     plugin.run()
