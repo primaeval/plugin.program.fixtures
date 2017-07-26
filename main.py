@@ -1039,6 +1039,7 @@ def bbc_sports_index():
 
 @plugin.route('/thefixtures/<sport>')
 def thefixtures(sport):
+    streams = plugin.get_storage('streams')
     url = "http://thefixtures.website/"+sport
     html = requests.get(url).content
     items = []
@@ -1054,12 +1055,24 @@ def thefixtures(sport):
         elif match[1] == '1':
             fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
         elif match[1] == '3':
-            channels = re.sub('<br />',' |',match[0])
+            channels = re.sub('<br />','|',match[0])
             channels = re.sub('<.*?>','',channels).strip('.\n').replace('\n',' ')
+            channel_list = channels.split('|')
+            channels = []
+            for channel in channel_list:
+                channel = channel.strip()
+                channels.append(channel)
+                if channel not in streams:
+                    streams[channel] = ""
+            channels = ','.join(channels)
             if channels:
                 label = "%s [%s]" % (fixture,channels)
+                start_time = "0"
+                end_time = "0"
+                path = plugin.url_for('stations_list', stations=channels, start=start_time, end=end_time, label=fixture)
                 items.append({
                     "label": label,
+                    "path": path
                 })
     return items
 
