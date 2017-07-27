@@ -18,6 +18,8 @@ import PIL.ImageOps
 import datetime
 from datetime import timedelta
 from rpc import RPC
+from dateutil import tz
+from resources.lib.pytz import timezone
 
 plugin = Plugin()
 big_list_view = True
@@ -1042,19 +1044,37 @@ def thefixtures(sport):
     streams = plugin.get_storage('streams')
     url = "http://thefixtures.website/"+sport
     html = requests.get(url).content
+    bst = re.search("All times are BST",html)
     items = []
     matches = re.findall(r'(<h([0-9]).*?</h\2>)',html,flags=(re.MULTILINE|re.DOTALL))
     fixture = ''
+    dt = None
     for match in matches:
         if match[1] == '2':
             date = re.sub('<.*?>','',match[0]).strip('.\n')
             if date not in ["Fundraising",'Timezone Converter']:
+                match = re.search('([^ ]*?) ([0-9]*)[^ ]*? (.*)',date)
+                day = match.group(2)
+                month = match.group(3)
+                months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                month = months.index(month) + 1
+                now = datetime.datetime.now()
+                midnight = datetime.datetime(now.year,now.month,now.day)
+                dt = datetime.datetime(now.year,month,int(day))
+                if dt < midnight:
+                    dt = dt.replace(year=dt.year+1)
+                '''
                 items.append({
                     "label": date,
                     'thumbnail':get_icon_path('calendar'),
                 })
+                '''
         elif match[1] == '1':
             fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
+            match = re.search("([0-9]{2}):([0-9]{2})",fixture)
+            if match:
+                hour = int(match.group(1))
+                min = int(match.group(2))
         elif match[1] == '3':
             channels = re.sub('<br />','|',match[0])
             channels = re.sub('<.*?>','',channels).strip('.\n').replace('\n',' ')
@@ -1067,7 +1087,13 @@ def thefixtures(sport):
                     streams[channel] = ""
             channels = ','.join(channels)
             if channels:
-                label = "%s [%s]" % (fixture,channels)
+                utc = timezone('Europe/London')
+                start = dt.replace(minute=min,hour=hour,tzinfo=utc)
+                to_zone = tz.tzlocal()
+                start = start.astimezone(to_zone)
+                if bst:
+                    start = start - datetime.timedelta(hours=1)
+                label = "%04d-%02d-%02d %02d:%02d [B]%s[/B] [%s]" % (start.year,start.month,start.day,start.hour,start.minute,fixture[8:],channels)
                 start_time = "0"
                 end_time = "0"
                 path = plugin.url_for('stations_list', stations=channels, start=start_time, end=end_time, label=fixture)
