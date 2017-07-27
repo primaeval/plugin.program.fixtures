@@ -90,7 +90,7 @@ def choose_stream(station):
         elif not line.startswith('#'):
             channel_url = line.split('=',1)
             if addon and len(channel_url) == 2:
-                addons[addon][channel_url[0]] = channel_url[1].lstrip('@')
+                addons[addon][remove_formatting(channel_url[0])] = channel_url[1].lstrip('@')
 
     m3u = plugin.get_setting('m3u')
     data = xbmcvfs.File(m3u,'rb').read()
@@ -375,7 +375,7 @@ def stations_list(stations,start,end,label):
         context_items = []
         context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
         context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station))))
-        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station.decode("utf8")], start=start, end=end))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'AutoPlay', 'XBMC.RunPlugin(%s)' % (plugin.url_for('autoplay', stream=streams[station], start=start, end=end))))
         if station in streams and streams[station]:
             new_label = "[COLOR yellow]%s[/COLOR] %s" % (station.strip(), label)
             list = playable_items
