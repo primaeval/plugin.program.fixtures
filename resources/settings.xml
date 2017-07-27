@@ -3,6 +3,9 @@
 <setting id="venue" label="Venue" type="bool" default="true" />
 <setting id="view" label="Big List View id" default="51" />
 <setting id="addons.ini" label="addons.ini" type="file" mask="addons.ini" />
+<setting id="m3u" label="m3u Channels" type="file" mask="*.m3u|*.m3u8" />
+<setting type="sep"/>
+<setting id="autoplay" label="Play Match if Only One Channel" type="bool" default="false" />
 </category>
 <!--
 <setting id="country" label="Country Code" type="select" default="all" values="all|ai|al|ao|ar|au|az|ba|be|bg|br|ca|ch|cn|cy|cz|de|dk|en|es|fi|fr|gr|hk|hr|hu|id|ie|il|in|ir|is|it|jp|kr|lv|mt|mx|my|nl|no|nz|pl|pt|qa|ro|rs|ru|s2|se|sg|si|sk|th|tr|ua|uk|us|vn|wa|za" />

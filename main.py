@@ -71,6 +71,9 @@ def choose_stream(station):
     station = station.decode("utf8")
     streams = plugin.get_storage('streams')
     d = xbmcgui.Dialog()
+
+
+
     addons_ini = plugin.get_setting('addons.ini')
     data = xbmcvfs.File(addons_ini,'rb').read()
     no_addons_ini = False
@@ -88,6 +91,17 @@ def choose_stream(station):
             channel_url = line.split('=',1)
             if addon and len(channel_url) == 2:
                 addons[addon][channel_url[0]] = channel_url[1].lstrip('@')
+
+    m3u = plugin.get_setting('m3u')
+    data = xbmcvfs.File(m3u,'rb').read()
+    no_m3u = False
+    if not data:
+        no_m3u = True
+    matches = re.findall(r'#EXTINF:(.*?),(.*?)\n([^#]*?)\n',data,flags=(re.MULTILINE))
+    addons["m3u"] = {}
+    for attributes,name,url in matches:
+        if name and url:
+            addons["m3u"][name.strip().decode("utf8")] = url.strip()
     if no_addons_ini:
         guess = "Guess (needs addons.ini)"
     else:
@@ -389,12 +403,15 @@ def autoplay(stream,start,end):
     xbmc.executebuiltin('AlarmClock(%s-start,PlayMedia(%s),%d,True)' %
         (stream+start+end, stream, timeToNotification))
 
+    # STOP is broken until sources have duration
+    '''
     if plugin.get_setting('stop') == 'true':
         t = end_dt - datetime.datetime.now()
         timeToNotification = ((t.days * 86400) + t.seconds) / 60
         if timeToNotification > 0:
             xbmc.executebuiltin('AlarmClock(%s-end,PlayerControl(Stop),%d,True)' %
                 (stream+start+end, timeToNotification))
+    '''
 
 @plugin.route('/channels_listing/<url>/<search>')
 def channels_listing(url,search):
@@ -1094,8 +1111,9 @@ def thefixtures(sport):
                 if bst:
                     start = start - datetime.timedelta(hours=1)
                 label = "%04d-%02d-%02d %02d:%02d [B]%s[/B] [%s]" % (start.year,start.month,start.day,start.hour,start.minute,fixture[8:],channels)
-                start_time = "0"
-                end_time = "0"
+                end = start
+                start_time = str(int(time.mktime(start.timetuple())))
+                end_time = str(int(time.mktime(end.timetuple())))
                 path = plugin.url_for('stations_list', stations=channels, start=start_time, end=end_time, label=fixture)
                 items.append({
                     "label": label,
