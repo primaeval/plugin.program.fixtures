@@ -348,8 +348,8 @@ def channel_list():
     items = []
     for station in stations:
         context_items = []
-        context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station.encode("utf8")))))
-        context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station.encode("utf8")))))
+        context_items.append(('[COLOR yellow]Choose Stream[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(choose_stream, station=station))))
+        context_items.append(('[COLOR yellow]Alternative Play[/COLOR]', 'XBMC.RunPlugin(%s)' % (plugin.url_for(alternative_play, station=station))))
         if station in streams and streams[station]:
             label = "[COLOR yellow]%s[/COLOR]" % station.strip()
         else:
@@ -357,7 +357,7 @@ def channel_list():
         items.append(
         {
             'label': label,
-            'path': plugin.url_for('play_channel', station=station.encode("utf8")),
+            'path': plugin.url_for('play_channel', station=station),
             'thumbnail': 'special://home/addons/plugin.program.fixtures/icon.png',
             'context_menu': context_items,
         })
@@ -1095,6 +1095,7 @@ def thefixtures(sport):
         elif match[1] == '3':
             channels = re.sub('<br />','|',match[0])
             channels = re.sub('<.*?>','',channels).strip('.\n').replace('\n',' ')
+            channels = re.sub('&amp;','&',channels)
             channel_list = channels.split('|')
             channels = []
             for channel in channel_list:
@@ -1129,9 +1130,9 @@ def thefixtures_index():
     big_list_view = False
 
     items = []
-    for sport in ['football','cricket','rugby','boxingmma','gaelic-games','baseball']:
+    for sport,label in [('football','Football'),('cricket','Cricket'),('rugby','Rugby'),('boxingmma','Boxing/MMA'),('gaelic-games','Gaelic Games'),('baseball','Baseball')]:
         items.append({
-            'label': "%s" % sport.replace('-',' ').title(),
+            'label': label,
             'path': plugin.url_for('thefixtures', sport=sport),
             'thumbnail':get_icon_path(sport),
         })
