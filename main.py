@@ -1123,6 +1123,87 @@ def thefixtures(sport):
                 })
     return items
 
+@plugin.route('/thefixtures_football/<sport>')
+def thefixtures_football(sport):
+    streams = plugin.get_storage('streams')
+    url = "http://thefixtures.website/"+sport
+    html = requests.get(url).content
+    match = re.findall("http://thefixtures.website/.*?day.*?/",html)
+    items = []
+    days = int(plugin.get_setting('thefixtures.days'))
+    for match_day_url in match[:days]:
+        html = requests.get(match_day_url).content
+        bst = re.search("All times are BST",html)
+
+        matches = re.findall(r'(<h([0-9]).*?</h\2>)',html,flags=(re.MULTILINE|re.DOTALL))
+        fixture = ''
+        dt = None
+        for match in matches:
+            #log(match)
+            if match[1] == '1':
+                if "entry-title" in match[0]:
+                    date = re.sub('<.*?>','',match[0]).strip('.\n')
+                    if date not in ["Fundraising",'Timezone Converter']:
+                        #log(date)
+                        match = re.search('([^ ]*?) ([0-9]*)[^ ]*? (.*)',date)
+                        #log(match)
+                        if(match):
+                            day = match.group(2)
+                            month = match.group(3)
+                            months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                            month = months.index(month) + 1
+                            now = datetime.datetime.now()
+                            midnight = datetime.datetime(now.year,now.month,now.day)
+                            dt = datetime.datetime(now.year,month,int(day))
+                            if dt < midnight:
+                                dt = dt.replace(year=dt.year+1)
+                            #log(dt)
+                            '''
+                            items.append({
+                                "label": date,
+                                'thumbnail':get_icon_path('calendar'),
+                            })
+                            '''
+                else:
+                    fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
+                    #log(fixture)
+                    match = re.search("([0-9]{2}):([0-9]{2})",fixture)
+                    if match:
+                        hour = int(match.group(1))
+                        min = int(match.group(2))
+                        #log((hour,min))
+            elif match[1] == '3':
+                channels = re.sub('<br />','|',match[0])
+                channels = re.sub('<.*?>','',channels).strip('.\n').replace('\n',' ')
+                channels = re.sub('&amp;','&',channels)
+                channel_list = channels.split('|')
+                channels = []
+                for channel in channel_list:
+                    channel = channel.strip()
+                    channels.append(channel)
+                    if channel not in streams:
+                        streams[channel] = ""
+                channels = ','.join(channels)
+                #log(channels)
+                if channels and dt:
+                    utc = timezone('Europe/London')
+                    start = dt.replace(minute=min,hour=hour,tzinfo=utc)
+                    to_zone = tz.tzlocal()
+                    start = start.astimezone(to_zone)
+                    if bst:
+                        start = start - datetime.timedelta(hours=1)
+                    label = "%04d-%02d-%02d %02d:%02d [B]%s[/B] [%s]" % (start.year,start.month,start.day,start.hour,start.minute,fixture[8:],channels)
+                    end = start
+                    start_time = str(int(time.mktime(start.timetuple())))
+                    end_time = str(int(time.mktime(end.timetuple())))
+                    path = plugin.url_for('stations_list', stations=channels, start=start_time, end=end_time, label=fixture)
+                    items.append({
+                        "label": label,
+                        "path": path,
+                        'thumbnail':get_icon_path('clock'),
+                    })
+    return items
+
 
 @plugin.route('/thefixtures_index')
 def thefixtures_index():
@@ -1130,10 +1211,16 @@ def thefixtures_index():
     big_list_view = False
 
     items = []
-    for sport,label in [('football','Football'),('cricket','Cricket'),('rugby','Rugby'),('boxingmma','Boxing/MMA'),('gaelic-games','Gaelic Games'),('baseball','Baseball')]:
+    for sport,label in [('cricket','Cricket'),('rugby','Rugby'),('boxingmma','Boxing/MMA'),('gaelic-games','Gaelic Games'),('baseball','Baseball')]:
         items.append({
             'label': label,
             'path': plugin.url_for('thefixtures', sport=sport),
+            'thumbnail':get_icon_path(sport),
+        })
+    for sport,label in [('football','Football')]:
+        items.append({
+            'label': label,
+            'path': plugin.url_for('thefixtures_football', sport=sport),
             'thumbnail':get_icon_path(sport),
         })
     return sorted(items, key=lambda x: x["label"])

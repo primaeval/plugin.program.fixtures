@@ -4,6 +4,8 @@
 <setting id="view" label="Big List View id" default="51" />
 <setting id="addons.ini" label="addons.ini" type="file" mask="addons.ini" />
 <setting id="m3u" label="m3u Channels" type="file" mask="*.m3u|*.m3u8" />
+<setting type="sep" />
+<setting id="thefixtures.days" label="The Fixtures days" type="number" default="1" />
 <setting type="sep"/>
 <setting id="autoplay" label="Play Match if Only One Channel" type="bool" default="false" />
 </category>
