@@ -1128,12 +1128,13 @@ def thefixtures_football(sport):
     streams = plugin.get_storage('streams')
     url = "http://thefixtures.website/"+sport
     html = requests.get(url).content
+    bst = re.search("British Summer Time",html)
     match = re.findall("http://thefixtures.website/.*?day.*?/",html)
     items = []
     days = int(plugin.get_setting('thefixtures.days'))
     for match_day_url in match[:days]:
         html = requests.get(match_day_url).content
-        bst = re.search("All times are BST",html)
+
 
         matches = re.findall(r'(<h([0-9]).*?</h\2>)',html,flags=(re.MULTILINE|re.DOTALL))
         fixture = ''
@@ -1166,6 +1167,7 @@ def thefixtures_football(sport):
                             '''
                 else:
                     fixture = re.sub('<.*?>','',match[0]).strip('.\n').replace('\n',' ')
+                    fixture = re.sub('&amp;','&',fixture)
                     #log(fixture)
                     match = re.search("([0-9]{2}):([0-9]{2})",fixture)
                     if match:
